@@ -1,0 +1,249 @@
+<div class="ofc" dir="rtl">
+  <!-- شريط العنوان -->
+  <div class="win-title">
+    <span>شاشة القيود اليومية</span>
+    <div class="win-btns"><span>_</span><span>□</span><span>×</span></div>
+  </div>
+
+  <app-legacy-status-bar
+    [error]="err()"
+    [info]="info()"
+    [badges]="statusBadges()"
+    (dismiss)="clearMessages()" />
+
+  <app-legacy-toolbar
+    [screen]="screenCode"
+    [mode]="mode()"
+    [saving]="saving()"
+    [posted]="postingLocked()"
+    [hasCurrent]="!!master()['NOS']"
+    [title]="'شاشة القيود اليومية'"
+    [countBadge]="rows().length + ' قيود'"
+    [actions]="['new','refresh','save','cancel','edit','delete','search','print','report','post','unpost','export','exit']"
+    [enabledRules]="{
+      new: canIns() && !editable() && !saving(),
+      refresh: canIns() && !saving() && !!master()['NOS'] && !editable(),
+      save: editable() && !saving(),
+      cancel: editable() && !saving(),
+      edit: canEd() && !!master()['NOS'] && !editable() && !postingLocked() && !saving(),
+      delete: canDe() && !!master()['NOS'] && !editable() && !postingLocked() && !saving(),
+      search: canSar() && !saving(),
+      print: canPr() && !!master()['NOS'] && !saving(),
+      report: !saving(),
+      post: canEd() && manualPosting() && !!master()['NOS'] && !editable() && !posted() && !saving(),
+      unpost: canEd() && manualPosting() && !!master()['NOS'] && !editable() && posted() && !saving(),
+      export: !saving(),
+      exit: !saving()
+    }"
+    (action)="onToolbarAction($event)" />
+
+  <!-- ═══════ الهيدر العلوي ═══════ -->
+  <div class="hdr">
+    <div class="hdr-row1">
+      <!-- الحقول — من اليمين: رقم القيد، تاريخ، مبلغ، مركز تكلفة، مرجع، مرفقات -->
+      <div class="hdr-fields">
+        <table class="fields-tbl">
+          <tr>
+            <td class="flbl">رقم القيد</td>
+            <td class="flbl">تاريخ القيد</td>
+            <td class="flbl">مبلغ القيد</td>
+            <td class="flbl">مركز التكلفة</td>
+            <td class="flbl">رقم المرجع</td>
+            <td class="flbl">المرفقات</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="spinner-control">
+                <input class="fi fi-num" type="number" [value]="master()['NOSON'] ?? ''" #nosonInput (keyup.enter)="onNosonEnter(nosonInput.value)" [disabled]="editable()" />
+                <div class="sp-arrows"><button type="button" tabindex="-1">▲</button><button type="button" tabindex="-1">▼</button></div>
+              </div>
+            </td>
+            <td><input class="fi" type="date" [ngModel]="master()['DATES'] ? (asStr(master()['DATES']) | date:'yyyy-MM-dd') : ''" (ngModelChange)="setMasterField('DATES', $event)" [disabled]="!editable()" /></td>
+            <td><input class="fi fi-ro fi-num" [value]="totalDebit() | number:'1.2-2'" disabled /></td>
+            <td><input class="fi fi-num" type="number" [ngModel]="master()['MRT2']" (ngModelChange)="onHeaderCostCenterChange($event)" [disabled]="!editable()" /></td>
+            <td><input class="fi fi-ro" [value]="master()['NOK'] || ''" disabled /></td>
+            <td><input class="fi fi-ro" value="" disabled /></td>
+          </tr>
+        </table>
+        <!-- صف F9 + إنشاء القيد من قيد دوري -->
+        <div class="f9-line">
+          <span>انشاء القيد من قيد دوري رقم</span>
+          <b class="f9t">F9</b>
+          <input class="fi fi-sm" type="number" [disabled]="editable() && !recurringVoucher()" />
+        </div>
+      </div>
+
+      <!-- CheckBoxes — يمين -->
+      <div class="hdr-checks">
+        <label class="chk"><input type="checkbox" [ngModel]="holdVoucher()" (ngModelChange)="holdVoucher.set(!!$event)" /><b>قيد تحت الانتظار</b></label>
+        <label class="chk"><input type="checkbox" [ngModel]="recurringVoucher()" (ngModelChange)="recurringVoucher.set(!!$event)" /><b>قيد دوري</b></label>
+        <label class="chk green"><input type="checkbox" [ngModel]="privatePostOnly()" (ngModelChange)="privatePostOnly.set(!!$event)" /><b>عدم اظهار القيد لباقي المستخدمين</b></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ شريط التفقيط + تبويب الرصيد ═══════ -->
+  <div class="words-bar">
+    <div class="bal-tab">الرصيد الحالي</div>
+    <div class="words-text">{{ amountInWords() }}</div>
+  </div>
+
+  <!-- ═══════ جدول التفاصيل ═══════ -->
+  <div class="grid-wrap">
+    <div class="grid-scroll">
+      <table class="g">
+        <colgroup>
+          <col class="col-noa" />
+          <col class="col-name" />
+          <col class="col-aml" />
+          <col class="col-sarf" />
+          <col class="col-mdin" />
+          <col class="col-dan" />
+          <col class="col-mdinf" />
+          <col class="col-danf" />
+          <col class="col-memo" />
+          <col class="col-mrt" />
+          @if (editable()) { <col style="width:20px" /> }
+        </colgroup>
+        <thead>
+          <tr>
+            <th>رقم الحساب</th>
+            <th>اسم الحساب</th>
+            <th>العملة</th>
+            <th>سعر الصرف F5</th>
+            <th>مدين عملة محلية - عليه</th>
+            <th>دائن عملة محلية - له</th>
+            <th>مدين عملة اجنبية - عليه</th>
+            <th>دائن عملة اجنبية - له</th>
+            <th>البيان</th>
+            <th>مركز التكلفة</th>
+            @if (editable()) { <th></th> }
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of details(); track trackByKey($index, d); let i = $index) {
+            <tr [class.r-odd]="i % 2 === 0" [class.r-even]="i % 2 !== 0" [class.r-active]="i === 0">
+              <td><input class="ci ci-n" type="number" [ngModel]="d.NOA" (ngModelChange)="onAccountNoInput(d._key, $event)" (dblclick)="openLovFor(d._key)" [disabled]="!editable()" /></td>
+              <td>
+                <div class="name-cell">
+                  <input class="ci" [ngModel]="d.NAMEA" (ngModelChange)="onAccountNameInput(d._key, $event)" (keydown)="onAccountNameEnter($event)" (blur)="onAccountNameBlur()" [disabled]="!editable()" />
+                  <button type="button" class="lov-b" (click)="openLovFor(d._key)" [disabled]="!editable()">…</button>
+                  @if (accountHintsKey() === d._key && accountHints().length > 0) {
+                    <ul class="ta-list">
+                      @for (hint of accountHints(); track hint.NOA) {
+                        <li (mousedown)="pickAccountFromHint($event, hint)">{{ hint.NOA }} - {{ hint.NAMEA }}</li>
+                      }
+                    </ul>
+                  }
+                </div>
+              </td>
+              <td><input class="ci ci-n" type="number" [ngModel]="d.NOAML" (ngModelChange)="onCurrencyInput(d._key, $event)" [disabled]="!editable()" /></td>
+              <td><input class="ci ci-n" type="number" step="0.0001" [ngModel]="d.SARSF" (ngModelChange)="onRateInput(d._key, $event)" [disabled]="!editable() || d.NOAML === 1" /></td>
+              <td><input class="ci ci-n" type="number" step="0.01" [ngModel]="d.MDIN" (ngModelChange)="onDebitInput(d._key, $event)" [disabled]="!editable()" /></td>
+              <td><input class="ci ci-n" type="number" step="0.01" [ngModel]="d.DAN" (ngModelChange)="onCreditInput(d._key, $event)" [disabled]="!editable()" /></td>
+              <td><input class="ci ci-n" type="number" step="0.01" [ngModel]="d.MDINAML" (ngModelChange)="onForeignDebitInput(d._key, $event)" [disabled]="!editable() || d.NOAML === 1" /></td>
+              <td><input class="ci ci-n" type="number" step="0.01" [ngModel]="d.DANAML" (ngModelChange)="onForeignCreditInput(d._key, $event)" [disabled]="!editable() || d.NOAML === 1" /></td>
+              <td><input class="ci" [ngModel]="d.MEMOS" (ngModelChange)="updateLine(d._key, { MEMOS: $event })" [disabled]="!editable()" /></td>
+              <td><input class="ci ci-n" type="number" [ngModel]="d.MRT" (ngModelChange)="updateLine(d._key, { MRT: +$event || 0 })" [disabled]="!editable()" /></td>
+              @if (editable()) {
+                <td><button type="button" class="del-b" (click)="removeLine(d._key)">×</button></td>
+              }
+            </tr>
+          }
+          @for (r of emptyGridRows(); track r; let i = $index) {
+            <tr class="r-empty">
+              <td>&nbsp;</td><td></td><td></td><td></td><td></td>
+              <td></td><td></td><td></td><td></td><td></td>
+              @if (editable()) { <td></td> }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    @if (editable()) {
+      <div class="grid-act"><button type="button" class="add-b" (click)="addLine()">+ سطر</button></div>
+    }
+  </div>
+
+  <!-- ═══════ شريط الإجماليات (مطابق للأصل) ═══════ -->
+  <div class="totals-bar">
+    <div class="totals-right">
+      @if (posted()) {
+        <span class="posted-lbl">مستند مرحل</span>
+      }
+      <span class="ftr-type-lbl">نوع القيد</span>
+      <select class="fi type-sel" [ngModel]="master()['TYPEMS'] ?? 1" (ngModelChange)="onTypeChange($event)" [disabled]="!editable() || saving()">
+        @for (t of voucherTypes; track t.id) {
+          <option [ngValue]="t.id">{{ t.label }}</option>
+        }
+      </select>
+      <label class="chk"><input type="checkbox" /><b>قيد عكسي</b></label>
+    </div>
+    <div class="totals-center">
+      <div class="tot-group">
+        <span class="tot-label">الاجمالي الكلي</span>
+        <span class="tot-val pink">{{ totalDebit() | number:'1.2-2' }}</span>
+        <span class="tot-val pink">{{ totalCredit() | number:'1.2-2' }}</span>
+      </div>
+      <div class="tot-group">
+        <span class="tot-label">الفارق</span>
+        <span class="tot-val diff" [class.red]="!balanced()">{{ diff() | number:'1.2-2' }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════ Audit Trail (مطابق للأصل — صفين) ═══════ -->
+  <div class="audit-bar">
+    <table class="audit-tbl">
+      <tr>
+        <td><b>مدخل المستند</b></td>
+        <td>{{ masterRecord()?.['ENTRYUSER'] || '' }}</td>
+        <td><b>تاريخ الادخال</b></td>
+        <td>{{ masterRecord()?.['ENTRYDATE'] || '' }}</td>
+        <td><b>الجهاز المدخل</b></td>
+        <td>{{ masterRecord()?.['ENTRYPC'] || '' }}</td>
+        <td><b>عدد مرات الطباعة</b></td>
+        <td>{{ masterRecord()?.['PRINTCOUNT'] || '' }}</td>
+        <td><label class="chk"><input type="checkbox" [ngModel]="fillVoucherAmount()" (ngModelChange)="fillVoucherAmount.set(!!$event)" /><b>ادخال مبلغ القيد</b></label></td>
+      </tr>
+      <tr>
+        <td><b>معدل المستند</b></td>
+        <td>{{ masterRecord()?.['MODUSER'] || '' }}</td>
+        <td><b>تاريخ التعديل</b></td>
+        <td>{{ masterRecord()?.['MODDATE'] || '' }}</td>
+        <td><b>الجهاز المعدل</b></td>
+        <td>{{ masterRecord()?.['MODPC'] || '' }}</td>
+        <td><b>عدد مرات التعديل</b></td>
+        <td>{{ masterRecord()?.['MODCOUNT'] || '' }}</td>
+        <td><label class="chk"><input type="checkbox" [ngModel]="printAfterSave()" (ngModelChange)="printAfterSave.set(!!$event)" /><b>طباعه القيد بعد الحفظ</b></label></td>
+      </tr>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════ بحث ═══════ -->
+@if (searchOpen()) {
+  <div class="modal-overlay">
+    <div class="search-dlg">
+      <div class="dlg-hdr">بحث متقدم في القيود<button class="x-btn" (click)="closeSearch()">×</button></div>
+      <div class="dlg-body">
+        <div><label>من تاريخ</label><input type="date" [ngModel]="searchCriteria().dateFrom" (ngModelChange)="updateCriterion('dateFrom', $event)" /></div>
+        <div><label>إلى تاريخ</label><input type="date" [ngModel]="searchCriteria().dateTo" (ngModelChange)="updateCriterion('dateTo', $event)" /></div>
+        <div><label>البيان</label><input type="text" [ngModel]="searchCriteria().memo" (ngModelChange)="updateCriterion('memo', $event)" /></div>
+        <div><label>الحالة</label><select [ngModel]="searchCriteria().posted" (ngModelChange)="updateCriterion('posted', $event)"><option value="">الكل</option><option value="1">مرحل</option><option value="0">غير مرحل</option></select></div>
+      </div>
+      <div class="dlg-ftr">
+        <button type="button" (click)="executeSearch()" [disabled]="searchBusy()">{{ searchBusy() ? 'جاري...' : 'بحث' }}</button>
+        <button type="button" (click)="resetSearch()">مسح</button>
+      </div>
+      @if (searchResults().length) {
+        <table class="g"><thead><tr><th>رقم</th><th>التاريخ</th><th>البيان</th></tr></thead>
+        <tbody>@for (r of searchResults(); track r.NOS) {
+          <tr (dblclick)="pickSearchResult(r.NOS)"><td>{{ r.NOS }}</td><td>{{ asStr(r.DATES) | date:'dd/MM/yyyy' }}</td><td>{{ r.MEMOS }}</td></tr>
+        }</tbody></table>
+      }
+    </div>
+  </div>
+}
+
+<app-lov-picker [open]="lovOpen()" [rtba]="5" title="دليل الحسابات" (select)="onLovSelect($event)" (close)="closeLov()" />

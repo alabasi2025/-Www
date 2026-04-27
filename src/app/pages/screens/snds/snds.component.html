@@ -1,0 +1,781 @@
+@if (vType === 'sndk' || vType === 'snds') {
+<div class="sndk-legacy" dir="rtl">
+  <!-- ═══ شريط العنوان ═══ -->
+  <div class="voucher-titlebar">
+    <span class="voucher-title">{{ vType === 'sndk' ? 'شاشة سندات القبض' : 'شاشة سندات الصرف' }}</span>
+    <div class="voucher-window-controls">
+      <button type="button" tabindex="-1">_</button>
+      <button type="button" tabindex="-1">□</button>
+      <button type="button" tabindex="-1" (click)="clearMessages()">×</button>
+    </div>
+  </div>
+
+  <!-- ═══ رسائل الخطأ / النجاح ═══ -->
+  <app-legacy-status-bar
+    [error]="err()"
+    [info]="info()"
+    (dismiss)="clearMessages()" />
+
+  <!-- ═══ شريط الأدوات ═══ -->
+  <app-legacy-toolbar
+    [screen]="screenCode()"
+    [mode]="mode()"
+    [saving]="saving()"
+    [posted]="postingLocked()"
+    [hasCurrent]="!!master()['NOS']"
+    [title]="typeLabel"
+    [countBadge]="vouchers().length + ' سند'"
+    [actions]="['exit','new','export','edit','search','delete','print','refresh','save','post','unpost','add-line','cancel']"
+    [enabledRules]="{
+      exit: !saving(),
+      new: canIns() && !saving() && !editable(),
+      export: !saving(),
+      edit: canEd() && !!master()['NOS'] && !saving() && !editable() && !postingLocked(),
+      search: !saving(),
+      delete: canDe() && !!master()['NOS'] && !saving() && !editable() && !postingLocked(),
+      print: !!master()['NOS'] && !saving(),
+      refresh: !saving(),
+      save: !saving() && editable(),
+      post: manualPosting() && !!master()['NOS'] && !saving() && !editable() && !posted(),
+      unpost: manualPosting() && !!master()['NOS'] && !saving() && !editable() && posted(),
+      'add-line': editable(),
+      cancel: editable() && !saving()
+    }"
+    (action)="onLegacyToolbarAction($event)">
+
+    <div class="legacy-toolbar-nav">
+      <input type="text" class="legacy-search" placeholder="بحث..."
+             [ngModel]="search()" (ngModelChange)="search.set($event)" />
+      <select class="legacy-voucher-picker"
+              [ngModel]="master()['NOS'] || ''"
+              (ngModelChange)="onLegacySelectNos($event)">
+        <option value="">{{ vType === 'sndk' ? 'اختر سند قبض' : 'اختر سند صرف' }}</option>
+        @for (v of filteredVouchers(); track v['NOS']) {
+          <option [ngValue]="v['NOS']">
+            {{ v['NOMS'] || v['NOS'] }} - {{ asStr(v['DATES']) | date:'yyyy-MM-dd' }} - {{ asNum(v['TOTALS']) | number:'1.0-0' }}
+          </option>
+        }
+      </select>
+      <span class="legacy-rec">{{ currentIdx() + 1 }}/{{ vouchers().length || 1 }}</span>
+    </div>
+  </app-legacy-toolbar>
+
+  <!-- ═══ الإطار الرئيسي ═══ -->
+  <div class="legacy-frame">
+
+    <!-- ─── الهيدر: 4 صفوف أفقية مطابقة للأصل ─── -->
+    <div class="legacy-header">
+      <!-- صف 1 -->
+      <div class="hdr-row">
+        <button class="hdr-btn" type="button" (click)="openLov('master')" [disabled]="!editable()">بحث</button>
+        <label class="hdr-lbl">تاريخ السند</label>
+        <input class="hdr-inp hdr-date" type="date"
+               [ngModel]="master()['DATES'] ? (asStr(master()['DATES']) | date:'yyyy-MM-dd') : ''"
+               (ngModelChange)="setMasterField('DATES', $event)" [disabled]="!editable()" />
+        <label class="hdr-lbl">العملة</label>
+        <input class="hdr-inp hdr-cur" type="text" [value]="currencyLabel()" disabled />
+        <label class="hdr-lbl">المبلغ بالريال اليمني</label>
+        <input class="hdr-inp hdr-amt" type="number" [ngModel]="master()['TOTALS']"
+               (ngModelChange)="onTotalsChange($event)" [disabled]="!editable()" />
+        @if (vType === 'sndk') {
+          <label class="hdr-lbl">رقم الحوالة</label>
+          <input class="hdr-inp hdr-hawala" type="text" [value]="master()['NOK'] || ''" disabled />
+          <label class="hdr-lbl">عبر شبكة</label>
+          <input class="hdr-inp hdr-net" type="text" [ngModel]="master()['NAMEB'] || ''"
+                 (ngModelChange)="setMasterField('NAMEB', $event)" [disabled]="!editable()" />
+        }
+      </div>
+
+      <!-- صف 2 -->
+      <div class="hdr-row">
+        <label class="hdr-lbl">{{ vType === 'sndk' ? 'الصراف' : 'الصندوق' }}</label>
+        @if (editable()) {
+          <button class="hdr-cashbox-btn" type="button" (click)="openCashboxPicker()">
+            <span class="cb-no">{{ nosn() || '...' }}</span>
+            <span class="cb-name">{{ cashboxName() }}</span>
+            <i class="pi pi-search"></i>
+          </button>
+        } @else {
+          <input class="hdr-inp hdr-cashbox" type="text"
+                 [value]="(nosn() || '') + ' - ' + cashboxName()" disabled />
+        }
+        <label class="hdr-lbl">سعر الصرف</label>
+        <input class="hdr-inp hdr-rate" type="number" [ngModel]="master()['SARSFS']"
+               (ngModelChange)="onSarsChange($event)" [disabled]="!editable()" />
+      </div>
+
+      <!-- صف 3 -->
+      <div class="hdr-row">
+        <label class="hdr-lbl">رقم السند</label>
+        <div class="hdr-nos-group">
+          <button class="nos-nav" (click)="navTo(-1)" [disabled]="currentIdx() <= 0">▲</button>
+          <input class="hdr-inp hdr-nos" type="text"
+                 [value]="master()['NOMS1'] || master()['NOMS'] || ''" disabled />
+          <button class="nos-nav" (click)="navTo(1)" [disabled]="currentIdx() >= vouchers().length - 1">▼</button>
+        </div>
+        <label class="hdr-lbl">المبلغ بالعملة الاجنبية</label>
+        <input class="hdr-inp hdr-famt" type="number" [ngModel]="master()['TOTALS2']"
+               (ngModelChange)="onTotals2Change($event)" [disabled]="!editable()" />
+      </div>
+
+      <!-- صف 4 -->
+      <div class="hdr-row">
+        <label class="hdr-lbl">مركز التكلفة</label>
+        <input class="hdr-inp hdr-mrt" type="number" [ngModel]="master()['MRT2'] || master()['MRT']"
+               (ngModelChange)="setMasterField('MRT2', $event)" [disabled]="!editable()" />
+        <label class="hdr-lbl">البيان</label>
+        <input class="hdr-inp hdr-memo" type="text"
+               [ngModel]="master()['MEMOS1'] || master()['MEMOS'] || ''"
+               (ngModelChange)="setMasterField('MEMOS1', $event)" [disabled]="!editable()" />
+      </div>
+    </div>
+
+    <!-- ─── المبلغ كتابة (تفقيط) ─── -->
+    <div class="legacy-words">{{ amountInWords() }}</div>
+
+    <!-- ─── الجدول ─── -->
+    <div class="legacy-grid-panel">
+      <table class="legacy-grid">
+        <colgroup>
+          <col style="width:7%">   <!-- رقم الحساب -->
+          <col style="width:17%">  <!-- اسم الحساب -->
+          <col style="width:5%">   <!-- العملة -->
+          <col style="width:12%">  <!-- المبلغ بالريال اليمني -->
+          <col style="width:6%">   <!-- سعر الصرف -->
+          <col style="width:11%">  <!-- المبلغ بالعملة الأجنبية -->
+          <col style="width:22%">  <!-- البيان -->
+          <col style="width:10%">  <!-- الرصيد الحالي -->
+          <col style="width:6%">   <!-- مركز التكلفة -->
+        </colgroup>
+        <thead>
+          <tr>
+            <th>رقم الحساب</th>
+            <th>اسم الحساب</th>
+            <th>العملة</th>
+            <th>المبلغ بالريال اليمني</th>
+            <th>سعر الصرف</th>
+            <th>المبلغ بالعملة الاجنبية</th>
+            <th>البيان</th>
+            <th>الرصيد الحالي</th>
+            <th>مركز التكلفة</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of details(); track d._key; let i = $index) {
+            <tr>
+              <td><input type="number" [ngModel]="d['NOAF'] || d['NOA']" (ngModelChange)="updateDetail(i, 'NOAF', $event)" [disabled]="!editable()" /></td>
+              <td>
+                <div class="legacy-name-cell">
+                  <input type="text" [value]="d['NAMEAF'] || getAccountName(d['NOAF'] || d['NOA']) || ''" disabled />
+                  <button type="button" (click)="openLov(i)" [disabled]="!editable()"><i class="pi pi-search"></i></button>
+                </div>
+              </td>
+              <td><input type="text" [value]="currencyName(d['NOAML']) || d['NOAML'] || ''" disabled /></td>
+              <td><input type="number" [ngModel]="d['TOAM'] || d['TOAA']" (ngModelChange)="onDetailToamChange(i, $event)" [disabled]="!editable()" /></td>
+              <td><input type="number" [ngModel]="d['SARSF'] || ''" (ngModelChange)="updateDetail(i, 'SARSF', $event)" [disabled]="!editable()" /></td>
+              <td><input type="number" [ngModel]="d['TOAA'] || ''" (ngModelChange)="updateDetail(i, 'TOAA', $event)" [disabled]="!editable()" /></td>
+              <td><input type="text" [ngModel]="d['MEMOS'] || d['MEMOSF'] || ''" (ngModelChange)="updateDetail(i, 'MEMOS', $event)" [disabled]="!editable()" /></td>
+              <td [class.legacy-balance-neg]="lineBalance(d) < 0"><input type="text" [value]="lineBalanceText(d)" disabled /></td>
+              <td><input type="number" [ngModel]="d['MRT'] || ''" (ngModelChange)="updateDetail(i, 'MRT', $event)" [disabled]="!editable()" /></td>
+            </tr>
+          }
+          @for (n of legacyPlaceholderRows(); track n) {
+            <tr class="legacy-empty-row">
+              <td><input type="text" value="" disabled /></td>
+              <td><input type="text" value="" disabled /></td>
+              <td><input type="text" value="" disabled /></td>
+              <td><input type="text" value="" disabled /></td>
+              <td><input type="text" value="" disabled /></td>
+              <td><input type="text" value="" disabled /></td>
+              <td><input type="text" value="" disabled /></td>
+              <td><input type="text" value="" disabled /></td>
+              <td><input type="text" value="" disabled /></td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ─── الفوتر ─── -->
+    <div class="legacy-bottom">
+      <!-- يمين: الإجمالي والفارق ومستند مرحل -->
+      <div class="legacy-bottom-right">
+        <div class="legacy-status-box" [class.posted]="posted()">
+          {{ posted() ? 'مستند مرحل' : 'مستند غير مرحل' }}
+        </div>
+        <div class="legacy-total-line">
+          <label>الإجمالي الكلي</label>
+          <span class="legacy-pink-box">{{ asNum(master()['TOTALS']) | number:'1.2-2' }}</span>
+        </div>
+        <div class="legacy-total-line">
+          <label>الفارق</label>
+          <span class="legacy-pink-box" [class.warn]="sumMismatch()">{{ legacyDiff() | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- وسط: CheckBoxes -->
+      <div class="legacy-bottom-mid">
+        <label class="chk-lbl">
+          <input type="checkbox" [ngModel]="legacyApplyMemoToAll()" (ngModelChange)="legacyApplyMemoToAll.set(!!$event)" />
+          تفعيل ادخال البيان الآلي واضافة البيان المدخل للبيان الآلي
+        </label>
+        <div class="chk-row">
+          <label class="chk-lbl">
+            <input type="checkbox" [ngModel]="legacyMultipleVouchers()" (ngModelChange)="legacyMultipleVouchers.set(!!$event)" />
+            سندات متعددة
+          </label>
+          <span class="legacy-pink-box chk-amt">.00</span>
+          <label class="chk-lbl">
+            <input type="checkbox" [ngModel]="legacyPrintAfterSave()" (ngModelChange)="legacyPrintAfterSave.set(!!$event)" />
+            طباعة السند بعد الحفظ
+          </label>
+        </div>
+        <div class="chk-row">
+          <label class="hdr-lbl">نموذج الطباعة</label>
+          <select class="print-select">
+            <option>مفرد</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- يسار: المستلم -->
+      <div class="legacy-bottom-left">
+        <div class="legacy-field">
+          <label>{{ vType === 'sndk' ? 'المُسلّم' : 'المستلم' }}</label>
+          <input type="text" [ngModel]="master()['NAMES'] || ''" disabled />
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── Audit Trail ─── -->
+    <app-legacy-audit-footer class="legacy-audit" [record]="masterRecord()" />
+  </div>
+</div>
+
+<!-- LOV الحسابات -->
+@if (searchDialogOpen()) {
+  <div class="lov-overlay" style="position:fixed;inset:0;z-index:1200;display:flex;align-items:flex-start;justify-content:center;padding-top:130px;background:rgba(255,255,255,.08);backdrop-filter:none;-webkit-backdrop-filter:none;" (click)="closeSearchDialog()">
+    <div class="lov-modal" style="width:360px;border-radius:0;border:2px solid #5a7896;background:#B0C4DE;box-shadow:3px 3px 0 rgba(0,0,0,.22);font:12px Tahoma,Arial,sans-serif;color:#0f3357;" (click)="$event.stopPropagation()" dir="rtl">
+      <div class="lov-header" style="height:24px;min-height:24px;padding:0 4px 0 8px;background:linear-gradient(#B8D0E8,#88B8DE);border-bottom:1px solid #6f8ea9;color:#0f3357;font:700 12px Tahoma,Arial,sans-serif;">
+        <span>{{ vType === 'sndk' ? 'بحث في سندات القبض' : 'بحث في سندات الصرف' }}</span>
+        <button type="button" class="lov-close" style="width:22px;height:18px;border:1px solid #7a8996;border-radius:0;background:linear-gradient(#eef4f8,#cfdce7);color:#3f4b55;line-height:14px;padding:0;" (click)="closeSearchDialog()">×</button>
+      </div>
+      <div style="display:grid;grid-template-columns:115px 1fr;gap:8px;align-items:center;padding:14px 12px 8px;">
+        <label style="font-weight:700;white-space:nowrap;">{{ vType === 'sndk' ? 'رقم سند القبض / البيان' : 'رقم سند الصرف / البيان' }}</label>
+        <input
+          type="text"
+          class="lov-search-input"
+          style="height:24px;border:1px solid #6f7f8f;background:#efefef;padding:0 6px;font:12px Tahoma,Arial,sans-serif;"
+          [ngModel]="searchDialogQuery()"
+          (ngModelChange)="searchDialogQuery.set($event)"
+          (keydown.enter)="submitSearchDialog()"
+          (keydown.escape)="closeSearchDialog()"
+          autofocus />
+      </div>
+      <div style="display:flex;justify-content:flex-start;gap:6px;padding:8px 12px 12px;">
+        <button type="button" style="min-width:74px;height:25px;border:1px solid #4d5d69;background:#e7e7e7;color:#111;font:12px Tahoma,Arial,sans-serif;" (click)="submitSearchDialog()">بحث</button>
+        <button type="button" style="min-width:74px;height:25px;border:1px solid #6f7f8f;background:#e7e7e7;color:#111;font:12px Tahoma,Arial,sans-serif;" (click)="closeSearchDialog()">إلغاء</button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (printPreviewOpen()) {
+  <div class="lov-overlay" style="position:fixed;inset:0;z-index:1210;display:flex;align-items:center;justify-content:center;background:rgba(15,23,42,.28);" (click)="closePrintPreview()">
+    <div class="lov-modal" style="width:min(980px,96vw);height:min(720px,92vh);border-radius:0;border:2px solid #5a7896;background:#B0C4DE;box-shadow:3px 3px 0 rgba(0,0,0,.25);font:12px Tahoma,Arial,sans-serif;color:#0f3357;" (click)="$event.stopPropagation()" dir="rtl">
+      <div class="lov-header" style="height:26px;min-height:26px;padding:0 6px 0 8px;background:linear-gradient(#B8D0E8,#88B8DE);border-bottom:1px solid #6f8ea9;color:#0f3357;font:700 12px Tahoma,Arial,sans-serif;">
+        <span>{{ vType === 'sndk' ? 'معاينة طباعة سند القبض' : 'معاينة طباعة سند الصرف' }}</span>
+        <button type="button" class="lov-close" style="width:22px;height:18px;border:1px solid #7a8996;border-radius:0;background:linear-gradient(#eef4f8,#cfdce7);color:#3f4b55;line-height:14px;padding:0;" (click)="closePrintPreview()">×</button>
+      </div>
+      <iframe
+        id="voucher-print-frame"
+        title="معاينة الطباعة"
+        [src]="printPreviewSafeUrl()"
+        style="width:100%;height:calc(100% - 62px);border:0;background:#fff;"></iframe>
+      <div style="height:36px;display:flex;align-items:center;justify-content:flex-start;gap:6px;padding:5px 8px;border-top:1px solid #6f8ea9;background:#B0C4DE;">
+        <button type="button" style="min-width:84px;height:25px;border:1px solid #4d5d69;background:#e7e7e7;color:#111;font:12px Tahoma,Arial,sans-serif;" (click)="printPreviewFrame()">طباعة</button>
+        <button type="button" style="min-width:84px;height:25px;border:1px solid #6f7f8f;background:#e7e7e7;color:#111;font:12px Tahoma,Arial,sans-serif;" (click)="closePrintPreview()">إغلاق</button>
+      </div>
+    </div>
+  </div>
+}
+
+<app-lov-picker
+  [open]="lovIsOpen()"
+  [rtba]="5"
+  title="دليل الحسابات"
+  (select)="selectFromLov($event)"
+  (close)="closeLov()" />
+
+<!-- LOV الصناديق -->
+@if (cashboxPickerOpen()) {
+  <div class="lov-overlay" (click)="closeCashboxPicker()">
+    <div class="lov-modal lov-modal-cashbox" (click)="$event.stopPropagation()" dir="rtl">
+      <div class="lov-header">
+        <span><i class="pi pi-wallet"></i> اختر الصندوق</span>
+        <span class="cashbox-count">{{ filteredCashboxCount() }} / {{ cashboxes().length }}</span>
+        <button class="lov-close" (click)="closeCashboxPicker()"><i class="pi pi-times"></i></button>
+      </div>
+      <div class="lov-search">
+        <i class="pi pi-search"></i>
+        <input type="text" placeholder="ابحث باسم الصندوق..."
+               [ngModel]="cashboxQuery()" (ngModelChange)="cashboxQuery.set($event)"
+               autofocus class="lov-search-input" />
+      </div>
+      <div class="cashbox-list">
+        @for (g of filteredCashboxGroups(); track g.label) {
+          <div class="cashbox-group">
+            <div class="cashbox-group-head"><i class="pi" [class]="g.icon"></i> {{ g.label }} <span class="cashbox-group-count">({{ g.items.length }})</span></div>
+            @for (b of g.items; track b.NOSN) {
+              <div class="cashbox-row" [class.selected]="b.NOSN === nosn()" (click)="pickCashbox(b.NOSN)">
+                <span class="cashbox-nosn">{{ b.NOSN }}</span>
+                <span class="cashbox-name">{{ b.NAMEA }}</span>
+                <span class="cashbox-noa">{{ b.NOA }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+}
+} @else {
+<div class="snds-root" dir="rtl">
+
+  <!-- â•گâ•گ TOOLBAR (shared component) â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ -->
+  <app-action-toolbar
+    [screen]="screenCode()"
+    [mode]="mode()"
+    [saving]="saving()"
+    [posted]="posted()"
+    [hasCurrent]="!!master()['NOS']"
+    [title]="typeLabel"
+    [icon]="vType === 'sndk' ? 'pi-file-plus' : 'pi-file-edit'"
+    [countBadge]="total() + ' سند'"
+    [actions]="['new','edit','delete','post','unpost','save','cancel','print','refresh']"
+    (action)="onToolbarAction($event)">
+
+    @if (master()['NOS'] && vouchers().length > 1) {
+      <div class="tb-nav">
+        <button class="nav-btn" (click)="navTo('first')" [disabled]="currentIdx()<=0" title="أول"><i class="pi pi-step-backward"></i></button>
+        <button class="nav-btn" (click)="navTo(-1)"      [disabled]="currentIdx()<=0" title="السابق"><i class="pi pi-caret-right"></i></button>
+        <span class="nav-pos">{{ currentIdx()+1 }} / {{ vouchers().length }}</span>
+        <button class="nav-btn" (click)="navTo(1)"       [disabled]="currentIdx()>=vouchers().length-1" title="التالي"><i class="pi pi-caret-left"></i></button>
+        <button class="nav-btn" (click)="navTo('last')"  [disabled]="currentIdx()>=vouchers().length-1" title="آخر"><i class="pi pi-step-forward"></i></button>
+      </div>
+    }
+
+    <div class="tb-search">
+      <i class="pi pi-search"></i>
+      <input type="text" placeholder="بحث في السندات..." [ngModel]="search()" (ngModelChange)="search.set($event)" />
+    </div>
+  </app-action-toolbar>
+
+  <!-- â•گâ•گ STATUS STRIP â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ -->
+  <div class="snds-status">
+    <app-status-strip
+      [error]="err()"
+      [info]="info()"
+      [badges]="statusBadges()"
+      (dismiss)="clearMessages()" />
+  </div>
+
+  <!-- â•گâ•گ FORM â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ -->
+  <div class="snds-body">
+
+    @if (master()['NOS'] || editable()) {
+      <div class="snds-form">
+
+        <!-- Status bar -->
+        @if (master()['NOS']) {
+          <div class="status-strip">
+            <span class="tag tag-nos"><i class="pi pi-hashtag"></i> {{ master()['NOMS'] || master()['NOS'] }}</span>
+            <span class="tag" [class.tag-posted]="posted()" [class.tag-draft]="!posted()">
+              <i class="pi" [class.pi-check]="posted()" [class.pi-clock]="!posted()"></i>
+              {{ posted() ? 'مُرحّل' : 'غير مُرحّل' }}
+            </span>
+            @if (master()['DATES']) {
+              <span class="tag tag-date"><i class="pi pi-calendar"></i> {{ asStr(master()['DATES']) | date:'yyyy-MM-dd' }}</span>
+            }
+            @if (master()['DI']) {
+              <span class="tag tag-meta">أُدخل: {{ asStr(master()['DI']) | date:'yyyy-MM-dd' }}</span>
+            }
+          </div>
+        }
+
+        <div class="form-cols">
+
+          <!-- COL 1: بيانات السند -->
+          <div class="form-card">
+            <div class="card-header"><i class="pi pi-file"></i> بيانات السند</div>
+            <div class="card-body">
+              <div class="field-row">
+                <label>رقم السند</label>
+                <input type="number" class="f-input" [ngModel]="master()['NOMS1'] || master()['NOMS']"
+                       (ngModelChange)="setMasterField('NOMS1', $event)" [disabled]="!editable()" />
+              </div>
+              <div class="field-row">
+                <label>التاريخ</label>
+                <input type="date" class="f-input"
+                       [ngModel]="master()['DATES'] ? (asStr(master()['DATES']) | date:'yyyy-MM-dd') : ''"
+                       (ngModelChange)="setMasterField('DATES', $event)" [disabled]="!editable()" />
+              </div>
+              <div class="field-row">
+                <label>الصندوق</label>
+                @if (editable()) {
+                  <button class="cashbox-btn" type="button" (click)="openCashboxPicker()">
+                    @if (nosn()) {
+                      <span class="cashbox-cat cashbox-cat-{{ cashboxCategory() }}">
+                        @switch (cashboxCategory()) {
+                          @case ('cash')     { <i class="pi pi-wallet"></i> نقدي }
+                          @case ('bank')     { <i class="pi pi-building"></i> بنك }
+                          @case ('exchange') { <i class="pi pi-send"></i> صرّاف }
+                          @default           { <i class="pi pi-question"></i> ? }
+                        }
+                      </span>
+                      <span class="cashbox-btn-text">{{ nosn() }} — {{ cashboxName() }}</span>
+                    } @else {
+                      <span class="cashbox-btn-ph">— اختر الصندوق —</span>
+                    }
+                    <i class="pi pi-search cashbox-btn-icon"></i>
+                  </button>
+                } @else {
+                  <div class="f-display f-mono">
+                    <span class="cashbox-cat cashbox-cat-{{ cashboxCategory() }}">
+                      @switch (cashboxCategory()) {
+                        @case ('cash')     { <i class="pi pi-wallet"></i> نقدي }
+                        @case ('bank')     { <i class="pi pi-building"></i> بنك }
+                        @case ('exchange') { <i class="pi pi-send"></i> صرّاف }
+                        @default           { — }
+                      }
+                    </span>
+                    {{ nosn() }} — {{ cashboxName() }}
+                  </div>
+                }
+              </div>
+              <div class="field-row">
+                <label>نوع الدفع</label>
+                @if (editable()) {
+                  <div class="pay-mode-group">
+                    <button class="pay-mode-btn" [class.active]="payMode()==='cash'"     (click)="onPayModeChange('cash')"><i class="pi pi-money-bill"></i> نقدي</button>
+                    <button class="pay-mode-btn" [class.active]="payMode()==='cheque'"   (click)="onPayModeChange('cheque')"><i class="pi pi-credit-card"></i> شيك</button>
+                    <button class="pay-mode-btn" [class.active]="payMode()==='transfer'" (click)="onPayModeChange('transfer')"><i class="pi pi-send"></i> حوالة</button>
+                  </div>
+                } @else {
+                  <div class="f-display">
+                    @if (isCheque())   { <span class="pay-tag pay-cheque"><i class="pi pi-credit-card"></i> شيك</span> }
+                    @else if (isTransfer()) { <span class="pay-tag pay-transfer"><i class="pi pi-send"></i> حوالة</span> }
+                    @else { <span class="pay-tag pay-cash"><i class="pi pi-money-bill"></i> نقدي</span> }
+                  </div>
+                }
+              </div>
+              <div class="field-row">
+                <label>رقم القيد</label>
+                <input class="f-input f-readonly" [value]="master()['NOK'] || '(تلقائي)'" disabled />
+              </div>
+            </div>
+          </div>
+
+          <!-- COL 2: الحساب الرئيسي (المستفيد for SNDS / المُسلِّم for SNDK) -->
+          <div class="form-card">
+            <div class="card-header"><i class="pi pi-user"></i> {{ headerAccountTitle }}</div>
+            <div class="card-body">
+              <div class="field-row field-row-full">
+                <label>{{ headerAccountLabel }}</label>
+                @if (editable()) {
+                  <div class="lov-input-wrap">
+                    <span class="lov-display">{{ master()['NAMES'] || (master()['NOA'] ? 'حساب ' + master()['NOA'] : '—') }}</span>
+                    <button class="lov-trigger" (click)="openLov('master')"><i class="pi pi-search"></i> بحث</button>
+                  </div>
+                } @else {
+                  <div class="f-display">{{ master()['NAMES'] || master()['NOA'] || '—' }}</div>
+                }
+              </div>
+              <div class="field-row">
+                <label>رقم الحساب</label>
+                <input class="f-input f-readonly f-mono" [value]="master()['NOA'] || ''" disabled />
+              </div>
+              <div class="field-row">
+                <label>العملة</label>
+                <input class="f-input f-readonly" [value]="currencyLabel()" disabled />
+              </div>
+            </div>
+          </div>
+
+          <!-- COL 3: المبالغ -->
+          <div class="form-card card-amounts">
+            <div class="card-header"><i class="pi pi-calculator"></i> المبالغ</div>
+            <div class="card-body">
+              <div class="field-row">
+                <label>المبلغ بالريال</label>
+                <input type="number" class="f-input f-amount" [ngModel]="master()['TOTALS']"
+                       (ngModelChange)="onTotalsChange($event)" [disabled]="!editable()" />
+              </div>
+              @if (hasForeign()) {
+                <div class="field-row">
+                  <label>سعر الصرف</label>
+                  <input type="number" class="f-input" [ngModel]="master()['SARSFS']"
+                         (ngModelChange)="onSarsChange($event)" [disabled]="!editable()" />
+                </div>
+                <div class="field-row">
+                  <label>بـ {{ currency()?.NAMEM3 }}</label>
+                  <input type="number" class="f-input f-amount" [ngModel]="master()['TOTALS2']"
+                         (ngModelChange)="onTotals2Change($event)" [disabled]="!editable()" />
+                </div>
+              }
+              @if (sarsWarning()) {
+                <div class="sars-warn"><i class="pi pi-exclamation-circle"></i> {{ sarsWarning() }}</div>
+              }
+              @if (details().length > 0) {
+                <div class="sum-chip" [class.mismatch]="sumMismatch()">
+                  <i class="pi" [class.pi-check-circle]="!sumMismatch()" [class.pi-times-circle]="sumMismatch()"></i>
+                  مجموع التفاصيل: <strong>{{ detailSumN() | number:'1.0-2' }}</strong>
+                  @if (sumMismatch()) { <span> ≠ {{ master()['TOTALS'] }}</span> }
+                </div>
+              }
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Cheque / Transfer -->
+        @if (isCheque() || isTransfer() || (editable() && payMode() !== 'cash')) {
+          <div class="form-card form-card-full">
+            <div class="card-header">
+              <i class="pi" [class.pi-credit-card]="isCheque()||(editable()&&payMode()==='cheque')" [class.pi-send]="isTransfer()||(editable()&&payMode()==='transfer')"></i>
+              {{ (isCheque()||(editable()&&payMode()==='cheque')) ? 'بيانات الشيك' : 'بيانات الحوالة' }}
+            </div>
+            <div class="card-body card-body-row">
+              @if (isCheque() || (editable() && payMode()==='cheque')) {
+                <div class="field-row">
+                  <label>رقم الشيك</label>
+                  <input type="number" class="f-input" [ngModel]="master()['NOHANDSHK']"
+                         (ngModelChange)="setMasterField('NOHANDSHK', $event)" [disabled]="!editable()" />
+                </div>
+                <div class="field-row">
+                  <label>تاريخ الشيك</label>
+                  <input type="date" class="f-input"
+                         [ngModel]="master()['DATESHK'] ? (asStr(master()['DATESHK']) | date:'yyyy-MM-dd') : ''"
+                         (ngModelChange)="setMasterField('DATESHK', $event)" [disabled]="!editable()" />
+                </div>
+                <div class="field-row" style="flex:2">
+                  <label>المُستلم / المُحوِّل</label>
+                  <input class="f-input" placeholder="اسم من استلم الشيك أو سلّمه"
+                         [ngModel]="master()['NAMEB']"
+                         (ngModelChange)="setMasterField('NAMEB', $event)" [disabled]="!editable()" />
+                </div>
+              }
+              @if (!isCheque() && (isTransfer() || (editable() && payMode()==='transfer'))) {
+                <div class="field-row" style="flex:2">
+                  <label>المُستلم / اسم البنك</label>
+                  <input class="f-input" placeholder="اسم المستلم أو البنك"
+                         [ngModel]="master()['NAMEB']"
+                         (ngModelChange)="setMasterField('NAMEB', $event)" [disabled]="!editable()" />
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Notes -->
+        <div class="form-card form-card-full">
+          <div class="card-header"><i class="pi pi-comment"></i> ملاحظات السند</div>
+          <div class="card-body card-body-row">
+            <div class="field-row" style="flex:2">
+              <label>البيان</label>
+              <textarea class="f-textarea" rows="2"
+                        [ngModel]="master()['MEMOS1'] || master()['MEMOS'] || ''"
+                        (ngModelChange)="setMasterField('MEMOS1', $event)"
+                        [disabled]="!editable()"></textarea>
+            </div>
+            <div class="field-row">
+              <label>مركز التكلفة</label>
+              <input type="number" class="f-input" [ngModel]="master()['MRT2'] || master()['MRT']"
+                     (ngModelChange)="setMasterField('MRT2', $event)" [disabled]="!editable()" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Detail table -->
+        <div class="form-card form-card-full detail-card">
+          <div class="card-header">
+            <span><i class="pi pi-table"></i> {{ distributionTitle }}</span>
+            @if (editable()) {
+              <button class="add-row-btn" (click)="addDetailRow()"><i class="pi pi-plus"></i> إضافة سطر</button>
+            }
+          </div>
+          <div class="detail-wrap">
+            <table class="detail-tbl">
+              <thead>
+                <tr>
+                  <th class="col-no">#</th>
+                  <th class="col-account">{{ detailAccountLabel }}</th>
+                  <th class="col-no">رقم</th>
+                  <th class="col-amt">المبلغ بالريال</th>
+                  @if (hasForeign()) { <th class="col-amt">بالعملة</th> }
+                  <th class="col-memo">البيان</th>
+                  <th class="col-mrt">م.تكلفة</th>
+                  @if (editable()) { <th class="col-del"></th> }
+                </tr>
+              </thead>
+              <tbody>
+                @if (details().length === 0) {
+                  <tr><td [colSpan]="editable() ? 8 : 7" class="empty-row">لا توجد تفاصيل — أضف سطراً</td></tr>
+                }
+                @for (d of details(); track d._key; let i = $index) {
+                  <tr [class.row-alt]="i%2===1">
+                    <td class="col-no td-center">{{ i+1 }}</td>
+                    <td class="col-account">
+                      @if (editable()) {
+                        <div class="lov-cell">
+                          <span class="lov-cell-name">{{ d['NAMEAF'] || (d['NOAF'] ? '#'+d['NOAF'] : '—') }}</span>
+                          <button class="lov-cell-btn" (click)="openLov(i)"><i class="pi pi-search"></i></button>
+                        </div>
+                      } @else {
+                        {{ d['NAMEAF'] || getAccountName(d['NOA']) || d['NOA'] || '—' }}
+                      }
+                    </td>
+                    <td class="col-no td-mono">{{ d['NOAF'] || d['NOA'] || '—' }}</td>
+                    <td class="col-amt">
+                      <input class="tbl-input" type="number"
+                             [ngModel]="d['TOAM'] || d['TOAA']"
+                             (ngModelChange)="onDetailToamChange(i, $event)"
+                             [disabled]="!editable()" />
+                    </td>
+                    @if (hasForeign()) {
+                      <td class="col-amt">
+                        <input class="tbl-input" type="number"
+                               [ngModel]="d['TOAA']"
+                               (ngModelChange)="updateDetail(i, 'TOAA', $event)"
+                               [disabled]="!editable()" />
+                      </td>
+                    }
+                    <td class="col-memo">
+                      <input class="tbl-input tbl-input-wide" [ngModel]="d['MEMOS'] || d['MEMOSF'] || ''"
+                             (ngModelChange)="updateDetail(i, 'MEMOS', $event)" [disabled]="!editable()" />
+                    </td>
+                    <td class="col-mrt">
+                      <input class="tbl-input" type="number" [ngModel]="d['MRT']"
+                             (ngModelChange)="updateDetail(i, 'MRT', $event)" [disabled]="!editable()" />
+                    </td>
+                    @if (editable()) {
+                      <td class="col-del">
+                        <button class="del-row-btn" (click)="removeDetailRow(i)" title="حذف"><i class="pi pi-trash"></i></button>
+                      </td>
+                    }
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- â•گâ•گ AUDIT CARD (reusable component) â•گâ•گ -->
+        @if (master()['NOS']) {
+          <app-audit-card [record]="master()" />
+        }
+
+      </div>
+    }
+
+    <!-- Empty state -->
+    @if (!master()['NOS'] && !editable() && !loading()) {
+      <div class="empty-state">
+        <i class="pi pi-file-edit empty-icon"></i>
+        <p>اختر سنداً من القائمة أو اضغط <strong>جديد</strong> لإنشاء سند جديد</p>
+      </div>
+    }
+    @if (loading()) {
+      <div class="empty-state"><i class="pi pi-spin pi-spinner" style="font-size:2rem;color:#1d4ed8"></i></div>
+    }
+
+    <!-- â•گâ•گ VOUCHER LIST â•گâ•گ -->
+    <div class="vouchers-panel">
+      <div class="vp-header">
+        <span><i class="pi pi-list"></i> قائمة السندات</span>
+        <span class="vp-count">{{ filteredVouchers().length }} / {{ total() }}</span>
+      </div>
+      <div class="vp-body">
+        <table class="vp-tbl">
+          <thead>
+            <tr>
+              <th>رقم السند</th>
+              <th>التاريخ</th>
+              <th>المبلغ</th>
+              <th>الحالة</th>
+              <th>الحساب</th>
+              <th>البيان</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (v of filteredVouchers(); track v['NOS']) {
+              <tr (click)="selectVoucher(v)" [class.vp-row-active]="v['NOS']===master()['NOS']">
+                <td class="td-mono">{{ v['NOMS'] || v['NOS'] }}</td>
+                <td>{{ asStr(v['DATES']) | date:'dd/MM/yyyy' }}</td>
+                <td class="td-amount">{{ asNum(v['TOTALS']) | number }}</td>
+                <td>
+                  <span class="badge" [class.badge-posted]="(+v['MRHL']!)===0" [class.badge-draft]="(+v['MRHL']!)!==0">
+                    {{ (+v['MRHL']!)===0 ? 'مُرحّل' : 'جديد' }}
+                  </span>
+                </td>
+                <td>
+                  <span class="td-mono">{{ v['NOA'] }}</span>
+                  @if (getAccountName(v['NOA'])) { <span class="hint"> {{ getAccountName(v['NOA']) }}</span> }
+                </td>
+                <td class="td-memo">{{ v['MEMOS'] }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- â•گâ•گ LOV DIALOG (shared component) â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ -->
+<app-lov-picker
+  [open]="lovIsOpen()"
+  [rtba]="5"
+  title="دليل الحسابات"
+  (select)="selectFromLov($event)"
+  (close)="closeLov()" />
+
+
+<!-- â•گâ•گ Cashbox Picker Modal â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ -->
+@if (cashboxPickerOpen()) {
+  <div class="lov-overlay" (click)="closeCashboxPicker()">
+    <div class="lov-modal lov-modal-cashbox" (click)="$event.stopPropagation()" dir="rtl">
+      <div class="lov-header">
+        <span><i class="pi pi-wallet"></i> اختر الصندوق</span>
+        <span class="cashbox-count">{{ filteredCashboxCount() }} / {{ cashboxes().length }}</span>
+        <button class="lov-close" (click)="closeCashboxPicker()"><i class="pi pi-times"></i></button>
+      </div>
+      <div class="lov-search">
+        <i class="pi pi-search"></i>
+        <input type="text" placeholder="ابحث بالاسم أو رقم الصندوق..."
+               [ngModel]="cashboxQuery()" (ngModelChange)="cashboxQuery.set($event)"
+               autofocus class="lov-search-input" />
+      </div>
+      <div class="cashbox-list">
+        @for (g of filteredCashboxGroups(); track g.label) {
+          <div class="cashbox-group">
+            <div class="cashbox-group-head"><i class="pi" [class]="g.icon"></i> {{ g.label }} <span class="cashbox-group-count">({{ g.items.length }})</span></div>
+            @for (b of g.items; track b.NOSN) {
+              <div class="cashbox-row" [class.selected]="b.NOSN === nosn()" (click)="pickCashbox(b.NOSN)">
+                <span class="cashbox-nosn">{{ b.NOSN }}</span>
+                <span class="cashbox-name">{{ b.NAMEA }}</span>
+                <span class="cashbox-noa">{{ b.NOA }}</span>
+              </div>
+            }
+          </div>
+        }
+        @if (filteredCashboxCount() === 0) {
+          <div class="lov-empty">لا نتائج</div>
+        }
+      </div>
+    </div>
+  </div>
+}
+}

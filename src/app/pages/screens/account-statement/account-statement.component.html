@@ -1,0 +1,217 @@
+<div class="statement-shell" dir="rtl">
+  <header class="report-toolbar">
+    <div class="title-block">
+      <span class="eyebrow">التقارير المالية</span>
+      <h1>كشف الحساب</h1>
+      <strong>{{ accountTitle() }}</strong>
+    </div>
+
+    <div class="toolbar-actions">
+      <button type="button" class="icon-button" title="تحديث" aria-label="تحديث" (click)="refresh()" [disabled]="statement.isLoading()">
+        <i class="pi pi-refresh"></i>
+      </button>
+      <button type="button" class="icon-button" title="تصدير CSV" aria-label="تصدير CSV" (click)="exportCsv()" [disabled]="!rows().length">
+        <i class="pi pi-file-excel"></i>
+      </button>
+      <button type="button" class="icon-button primary" title="طباعة" aria-label="طباعة" (click)="printReport()" [disabled]="!rows().length">
+        <i class="pi pi-print"></i>
+      </button>
+    </div>
+  </header>
+
+  <section class="filters-band">
+    <div class="field wide">
+      <label for="statement-account">الحساب</label>
+      <div class="account-control">
+        <input id="statement-account" type="text" inputmode="numeric" [formField]="filters.noa" />
+        <button type="button" title="دليل الحسابات" aria-label="دليل الحسابات" (click)="openAccounts()">
+          <i class="pi pi-search"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="statement-from">من تاريخ</label>
+      <input id="statement-from" type="date" [formField]="filters.dateFrom" />
+    </div>
+
+    <div class="field">
+      <label for="statement-to">إلى تاريخ</label>
+      <input id="statement-to" type="date" [formField]="filters.dateTo" />
+    </div>
+
+    <div class="field">
+      <label for="statement-currency">العملة</label>
+      <select id="statement-currency" [formField]="filters.currency">
+        <option value="">كل العملات</option>
+        @for (currency of currencyRows(); track currency.NO) {
+          <option [value]="currency.NO">{{ currency.NO }} - {{ currency.NAMEM3 || currency.NAMEM2 || currency.NAMEM || currency.NAMEH }}</option>
+        }
+      </select>
+    </div>
+
+    <div class="field compact">
+      <label for="statement-mrt">مركز</label>
+      <input id="statement-mrt" type="text" inputmode="numeric" [formField]="filters.mrt" />
+    </div>
+
+    <div class="field search">
+      <label for="statement-q">البيان</label>
+      <div class="search-control">
+        <input id="statement-q" type="text" [formField]="filters.q" />
+        <button type="button" title="مسح البحث" aria-label="مسح البحث" (click)="clearSearch()" [disabled]="!filtersModel().q">
+          <i class="pi pi-times"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="field compact">
+      <label for="statement-limit">الحد</label>
+      <input id="statement-limit" type="number" [formField]="filters.limit" />
+    </div>
+
+    <div class="filter-actions">
+      <button type="button" class="range-button" (click)="setRange2022()">2022 - اليوم</button>
+      <button type="button" class="run-button" (click)="applyFilters()" [disabled]="statement.isLoading()">
+        <i class="pi pi-play"></i>
+        <span>{{ statement.isLoading() ? 'جاري العرض' : 'عرض' }}</span>
+      </button>
+    </div>
+  </section>
+
+  @if (notice() || resourceError()) {
+    <div class="notice-line">
+      <i class="pi pi-info-circle"></i>
+      <span>{{ notice() || resourceError() }}</span>
+    </div>
+  }
+
+  <section class="summary-strip" aria-label="ملخص كشف الحساب">
+    <div class="metric opening">
+      <span>رصيد افتتاحي</span>
+      <strong [ngClass]="balanceClass(data().opening)">{{ data().opening | number:'1.0-2' }}</strong>
+    </div>
+    <div class="metric debit">
+      <span>مدين</span>
+      <strong>{{ summary().debit | number:'1.0-2' }}</strong>
+    </div>
+    <div class="metric credit">
+      <span>دائن</span>
+      <strong>{{ summary().credit | number:'1.0-2' }}</strong>
+    </div>
+    <div class="metric ending">
+      <span>الرصيد</span>
+      <strong [ngClass]="balanceClass(summary().ending)">{{ summary().ending | number:'1.0-2' }}</strong>
+    </div>
+    <div class="metric count">
+      <span>الحركات</span>
+      <strong>{{ summary().count | number:'1.0-0' }}</strong>
+    </div>
+  </section>
+
+  <main class="statement-page">
+    <div class="report-head">
+      <div>
+        <span>الحساب</span>
+        <strong>{{ accountTitle() }}</strong>
+      </div>
+      <div>
+        <span>الفترة</span>
+        <strong>{{ applied().dateFrom || 'البداية' }} إلى {{ applied().dateTo || 'اليوم' }}</strong>
+      </div>
+      <div>
+        <span>القاعدة</span>
+        <strong>{{ data().schema || '' }}</strong>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="c">#</th>
+            <th>التاريخ</th>
+            <th>النوع</th>
+            <th>المستند</th>
+            <th>القيد</th>
+            <th class="memo">البيان</th>
+            <th class="num">مدين</th>
+            <th class="num">دائن</th>
+            <th class="num">الرصيد</th>
+            <th>العملة</th>
+            @if (hasForeign()) {
+              <th class="num">مدين عملة</th>
+              <th class="num">دائن عملة</th>
+              <th class="num">رصيد عملة</th>
+            }
+            <th>مركز</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="opening-row">
+            <td class="c">0</td>
+            <td>{{ applied().dateFrom || '' }}</td>
+            <td colspan="4">رصيد افتتاحي</td>
+            <td class="num"></td>
+            <td class="num"></td>
+            <td class="num" [ngClass]="balanceClass(data().opening)">{{ data().opening | number:'1.0-2' }}</td>
+            <td></td>
+            @if (hasForeign()) {
+              <td class="num"></td>
+              <td class="num"></td>
+              <td class="num" [ngClass]="balanceClass(data().openingAml)">{{ data().openingAml | number:'1.0-2' }}</td>
+            }
+            <td></td>
+          </tr>
+
+          @if (statement.isLoading()) {
+            <tr>
+              <td class="loading-cell" colspan="14">جاري تحميل كشف الحساب...</td>
+            </tr>
+          } @else {
+            @for (row of rows(); track trackRow($index, row)) {
+              <tr [class.waiting]="row.KDANT > 0">
+                <td class="c">{{ $index + 1 }}</td>
+                <td>{{ row.DATEMO | date:'yyyy/MM/dd' }}</td>
+                <td><span class="type-pill">{{ row.TYPEMS_LABEL }}</span></td>
+                <td>{{ row.NOMS || row.NOMSR }}</td>
+                <td>{{ row.NOK }}</td>
+                <td class="memo">{{ row.MEMOS }}</td>
+                <td class="num debit-value">{{ row.MDIN ? (row.MDIN | number:'1.0-2') : '' }}</td>
+                <td class="num credit-value">{{ row.DAN ? (row.DAN | number:'1.0-2') : '' }}</td>
+                <td class="num balance-value" [ngClass]="balanceClass(row.BALANCE)">{{ row.BALANCE | number:'1.0-2' }}</td>
+                <td>{{ row.NOAML_NAME || row.NOAML }}</td>
+                @if (hasForeign()) {
+                  <td class="num">{{ row.MDINAML ? (row.MDINAML | number:'1.0-2') : '' }}</td>
+                  <td class="num">{{ row.DANAML ? (row.DANAML | number:'1.0-2') : '' }}</td>
+                  <td class="num" [ngClass]="balanceClass(row.BALANCEAML)">{{ row.BALANCEAML | number:'1.0-2' }}</td>
+                }
+                <td>{{ row.MRT_NAME || row.MRT || '' }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td class="empty-cell" colspan="14">لا توجد حركة للحساب ضمن الفلاتر الحالية</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <footer class="report-foot">
+      <span>عدد السجلات المعروضة: {{ rows().length | number:'1.0-0' }}</span>
+      @if (summary().limited) {
+        <strong>يوجد سجلات إضافية غير معروضة بسبب حد العرض</strong>
+      }
+    </footer>
+  </main>
+
+  <app-lov-picker
+    [open]="lovOpen()"
+    [rtba]="5"
+    [limit]="60"
+    title="دليل الحسابات"
+    (select)="pickAccount($event)"
+    (close)="closeAccounts()"
+  />
+</div>

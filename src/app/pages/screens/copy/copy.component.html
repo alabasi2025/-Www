@@ -1,0 +1,64 @@
+<div class="copy-legacy-stage" dir="rtl">
+  <div class="oracle-caption" dir="ltr">Oracle Database 10g Enterprise Edition Release 10.2.0</div>
+  <div class="oracle-check" aria-hidden="true"></div>
+  <div class="oracle-art" aria-hidden="true"></div>
+
+  @if (err() || info()) {
+    <div class="copy-message" [class.copy-error]="!!err()">
+      {{ err() || info() }}
+      <button type="button" (click)="clearMessages()">×</button>
+    </div>
+  }
+
+  <section class="copy-window" aria-label="شاشة النسخ الاحتياطي">
+    <div class="copy-titlebar">
+      <span class="window-icon"></span>
+      <span class="title-text">شاشة النسخ الاحتياطي</span>
+      <button type="button" class="window-close" (click)="onExit()">×</button>
+    </div>
+
+    <div class="copy-body">
+      <fieldset class="copy-fieldset">
+        <legend>اسم وموقع حفظ النسخة الاحتياطية</legend>
+
+        <div class="copy-path-row">
+          <button type="button" class="folder-btn" title="اختيار ملف" [disabled]="saving()">
+            <i class="pi pi-folder-open"></i>
+          </button>
+          <input
+            dir="ltr"
+            [ngModel]="path()"
+            (ngModelChange)="path.set($event)"
+            [disabled]="saving()"
+          />
+        </div>
+
+        <div class="copy-actions-row">
+          <div class="legacy-buttons" dir="ltr">
+            <button type="button" class="legacy-red" title="خروج" (click)="onExit()" [disabled]="saving()">
+              <i class="pi pi-power-off"></i>
+            </button>
+            <button type="button" class="legacy-save" title="حفظ النسخة الاحتياطية" (click)="buildPlan()" [disabled]="saving()">
+              <i class="pi pi-save"></i>
+            </button>
+          </div>
+
+          <label class="archived-check">
+            <input
+              type="checkbox"
+              [ngModel]="includeArchived()"
+              (ngModelChange)="includeArchived.set($event)"
+              [disabled]="saving()"
+            />
+            <span>نسخ السنوات المقفلة</span>
+          </label>
+        </div>
+      </fieldset>
+    </div>
+  </section>
+
+  <footer class="legacy-footer">
+    <strong>حقوق النسخ والتوزيع محفوظة للأوائل سوفت لأنظمة الحاسب</strong>
+    <span>777153270 - 734570264 - 733633244 - 773964375</span>
+  </footer>
+</div>

@@ -1,0 +1,220 @@
+<div class="aml-legacy" dir="rtl">
+  <section class="legacy-window" aria-label="شاشة بيانات العملات">
+    <header class="legacy-titlebar" dir="ltr">
+      <span class="window-icon" aria-hidden="true"></span>
+      <h2>شاشة بيانات العملات</h2>
+      <button type="button" class="window-close" title="خروج" (click)="onExit()" [disabled]="saving()">×</button>
+    </header>
+
+    <div class="legacy-workarea">
+      @if (err() || info()) {
+        <div class="legacy-message" [class.message-error]="!!err()" [class.message-info]="!err() && !!info()">
+          <span>{{ err() || info() }}</span>
+          <button type="button" title="إغلاق" (click)="clearMessages()">×</button>
+        </div>
+      }
+
+      <div class="grid-scroll" dir="ltr">
+        <table class="currency-grid" dir="rtl">
+          <colgroup>
+            <col class="col-no" />
+            <col class="col-name-wide" />
+            <col class="col-name-short" />
+            <col class="col-fls" />
+            <col class="col-code" />
+            <col class="col-account-name" />
+            <col class="col-rate" />
+            <col class="col-rate" />
+            <col class="col-rate" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>رقم العملة</th>
+              <th>اسم العملة</th>
+              <th>اسم العملة</th>
+              <th>الكسر</th>
+              <th>رمز العملة</th>
+              <th>اسم العملة لكشف الحساب</th>
+              <th>سعر التحويل</th>
+              <th>اعلى سعر</th>
+              <th>اقل سعر</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (loading()) {
+              <tr>
+                <td class="grid-state" colspan="9">جاري تحميل بيانات العملات...</td>
+              </tr>
+            } @else if (filtered().length === 0 && mode() !== 'new') {
+              <tr>
+                <td class="grid-state" colspan="9">لا توجد عملات</td>
+              </tr>
+            } @else {
+              @for (r of filtered(); track trackByNo($index, r)) {
+                @if (isEditingRow(r.NO)) {
+                  <tr class="row-current row-edit">
+                    <td>
+                      <input class="cell-input num-input" type="number" min="1"
+                             [ngModel]="form().NO"
+                             (ngModelChange)="updateField('NO', +$event || null)"
+                             [disabled]="mode() !== 'new'" />
+                    </td>
+                    <td>
+                      <input class="cell-input" type="text" maxlength="40"
+                             [ngModel]="form().NAMEM2"
+                             (ngModelChange)="updateField('NAMEM2', $event)"
+                             [disabled]="!editable() || !canEditLegacyName()" />
+                    </td>
+                    <td>
+                      <input class="cell-input" type="text" maxlength="20"
+                             [ngModel]="form().NAMEM"
+                             (ngModelChange)="updateField('NAMEM', $event)"
+                             [disabled]="!editable()" />
+                    </td>
+                    <td>
+                      <input class="cell-input" type="text" maxlength="20"
+                             [ngModel]="form().FLS"
+                             (ngModelChange)="updateField('FLS', $event)"
+                             [disabled]="!editable()" />
+                    </td>
+                    <td>
+                      <input class="cell-input code-input" type="text" maxlength="10"
+                             [ngModel]="form().NACHAR"
+                             (ngModelChange)="updateField('NACHAR', $event)"
+                             [disabled]="!editable()" />
+                    </td>
+                    <td>
+                      <input class="cell-input" type="text" maxlength="40"
+                             [ngModel]="form().NAMEH"
+                             (ngModelChange)="updateField('NAMEH', $event)"
+                             [disabled]="!editable()" />
+                    </td>
+                    <td>
+                      <input class="cell-input num-input" type="number" step="0.0001" min="0"
+                             [ngModel]="form().SARS"
+                             (ngModelChange)="updateField('SARS', +$event || 0)"
+                             (blur)="normalizeRateFields()"
+                             [disabled]="!editable() || isLocalCurrency()" />
+                    </td>
+                    <td>
+                      <input class="cell-input num-input" type="number" step="0.0001" min="0"
+                             [ngModel]="form().SARS1"
+                             (ngModelChange)="updateField('SARS1', +$event || 0)"
+                             (blur)="normalizeRateFields()"
+                             [disabled]="!editable() || isLocalCurrency()" />
+                    </td>
+                    <td>
+                      <input class="cell-input num-input" type="number" step="0.0001" min="0"
+                             [ngModel]="form().SARS2"
+                             (ngModelChange)="updateField('SARS2', +$event || 0)"
+                             (blur)="normalizeRateFields()"
+                             [disabled]="!editable() || isLocalCurrency()" />
+                    </td>
+                  </tr>
+                } @else {
+                  <tr class="data-row"
+                      [class.row-current]="r.NO === selected()"
+                      (click)="openGridRow(r.NO)"
+                      (dblclick)="onEdit()">
+                    <td class="num-cell">{{ r.NO }}</td>
+                    <td>{{ r.NAMEM2 || r.NAMEM || '' }}</td>
+                    <td>{{ r.NAMEM || r.NAMEM2 || '' }}</td>
+                    <td>{{ r.FLS || '' }}</td>
+                    <td class="code-cell">{{ r.NACHAR || '' }}</td>
+                    <td>{{ r.NAMEH || r.NAMEM2 || '' }}</td>
+                    <td class="num-cell">{{ r.SARS | number: '1.2-4' }}</td>
+                    <td class="num-cell">{{ r.SARS1 | number: '1.2-4' }}</td>
+                    <td class="num-cell">{{ r.SARS2 | number: '1.2-4' }}</td>
+                  </tr>
+                }
+              }
+
+              @if (mode() === 'new') {
+                <tr class="row-current row-edit row-new">
+                  <td>
+                    <input class="cell-input num-input" type="number" min="1"
+                           [ngModel]="form().NO"
+                           (ngModelChange)="updateField('NO', +$event || null)" />
+                  </td>
+                  <td>
+                    <input class="cell-input" type="text" maxlength="40"
+                           [ngModel]="form().NAMEM2"
+                           (ngModelChange)="updateField('NAMEM2', $event)" />
+                  </td>
+                  <td>
+                    <input class="cell-input" type="text" maxlength="20"
+                           [ngModel]="form().NAMEM"
+                           (ngModelChange)="updateField('NAMEM', $event)" />
+                  </td>
+                  <td>
+                    <input class="cell-input" type="text" maxlength="20"
+                           [ngModel]="form().FLS"
+                           (ngModelChange)="updateField('FLS', $event)" />
+                  </td>
+                  <td>
+                    <input class="cell-input code-input" type="text" maxlength="10"
+                           [ngModel]="form().NACHAR"
+                           (ngModelChange)="updateField('NACHAR', $event)" />
+                  </td>
+                  <td>
+                    <input class="cell-input" type="text" maxlength="40"
+                           [ngModel]="form().NAMEH"
+                           (ngModelChange)="updateField('NAMEH', $event)" />
+                  </td>
+                  <td>
+                    <input class="cell-input num-input" type="number" step="0.0001" min="0"
+                           [ngModel]="form().SARS"
+                           (ngModelChange)="updateField('SARS', +$event || 0)"
+                           (blur)="normalizeRateFields()"
+                           [disabled]="isLocalCurrency()" />
+                  </td>
+                  <td>
+                    <input class="cell-input num-input" type="number" step="0.0001" min="0"
+                           [ngModel]="form().SARS1"
+                           (ngModelChange)="updateField('SARS1', +$event || 0)"
+                           (blur)="normalizeRateFields()"
+                           [disabled]="isLocalCurrency()" />
+                  </td>
+                  <td>
+                    <input class="cell-input num-input" type="number" step="0.0001" min="0"
+                           [ngModel]="form().SARS2"
+                           (ngModelChange)="updateField('SARS2', +$event || 0)"
+                           (blur)="normalizeRateFields()"
+                           [disabled]="isLocalCurrency()" />
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="toolbar-frame" dir="ltr" aria-label="أوامر الشاشة">
+        <button class="legacy-tool-btn tool-exit" type="button" title="خروج"
+                (click)="onExit()" [disabled]="saving()">
+          <span>خروج</span>
+        </button>
+        <button class="legacy-tool-btn tool-delete" type="button" title="حذف"
+                (click)="onDelete()" [disabled]="!canDe() || !hasCurrent() || editable() || saving()">
+          <span>حذف</span>
+        </button>
+        <button class="legacy-tool-btn tool-edit" type="button" title="تعديل"
+                (click)="onEdit()" [disabled]="!canEd() || !hasCurrent() || editable() || saving()">
+          <span>تعديل</span>
+        </button>
+        <button class="legacy-tool-btn tool-back" type="button" title="تراجع"
+                (click)="onCancel()" [disabled]="!editable() || saving()">
+          <span>تراجع</span>
+        </button>
+        <button class="legacy-tool-btn tool-save" type="button" title="حفظ"
+                (click)="onSave()" [disabled]="!editable() || saving()">
+          <span>حفظ</span>
+        </button>
+        <button class="legacy-tool-btn tool-new" type="button" title="جديد"
+                (click)="onNew()" [disabled]="!canIns() || editable() || saving() || loading()">
+          <span>جديد</span>
+        </button>
+      </div>
+    </div>
+  </section>
+</div>

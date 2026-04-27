@@ -1,0 +1,237 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.akfal-root {
+  
+  
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  
+  background: transparent;
+  color: #101010;
+  font: 700 12px Tahoma, Arial, sans-serif;
+}
+
+.akfal-window {
+  
+  top: 247px;
+  left: 432px;
+  transform: none;
+  width: 510px;
+  height: 274px;
+  min-height: 274px;
+  
+  background: #b9daf4;
+  border: 1px solid #6f899f;
+  box-shadow:
+    inset 1px 1px 0 #dff0fb,
+    inset -1px -1px 0 #8db4d1,
+    0 1px 0 #ffffff;
+}
+
+.akfal-titlebar {
+  height: 37px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  color: #8d9fad;
+  background: linear-gradient(#B8D0E8, #afd2ee);
+  border-bottom: 1px solid #8fb3cf;
+  font-size: 12px;
+  font-weight: 700;
+  direction: ltr;
+}
+
+.akfal-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  background: url('/legacy-icons/w.ico') center / contain no-repeat;
+}
+
+.akfal-title {
+  flex: 1;
+  text-align: right;
+  white-space: nowrap;
+  direction: rtl;
+}
+
+.akfal-close {
+  width: 26px;
+  height: 20px;
+  border: 1px solid #7a8996;
+  background: linear-gradient(#e8eff5, #c6d6e3);
+  color: #4f5f6b;
+  font: 700 13px Tahoma, Arial, sans-serif;
+  line-height: 16px;
+  padding: 0;
+  cursor: pointer;
+}
+
+.akfal-close:active {
+  border-color: #4d5d69 #dbe8f2 #dbe8f2 #4d5d69;
+}
+
+app-legacy-status-bar {
+  display: block;
+  min-height: 0;
+}
+
+.akfal-body {
+  margin: 40px 22px 8px;
+  display: grid;
+  gap: 7px;
+}
+
+.akfal-row {
+  height: 43px;
+  display: grid;
+  grid-template-columns: 56px 102px 1fr;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 10px;
+  background: #c4e0f5;
+  border: 1px solid #8fb4cf;
+  box-shadow: inset 1px 1px 0 #e9f6ff;
+  direction: ltr;
+}
+
+.akfal-row label {
+  color: #111;
+  text-align: right;
+  white-space: nowrap;
+  direction: rtl;
+}
+
+.lock-button {
+  width: 44px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #9badba;
+  background: linear-gradient(#f2f7fb, #d8e8f3);
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #a8b9c6;
+  padding: 0;
+  cursor: pointer;
+}
+
+.lock-button span {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background: url('/legacy-icons/k.ico') center / 28px 28px no-repeat;
+}
+
+.lock-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+.lock-button:active:not(:disabled) {
+  box-shadow: inset -1px -1px 0 #ffffff, inset 1px 1px 0 #8fa2b0;
+}
+
+.legacy-input {
+  height: 27px;
+  border: 1px solid #9ca8b2;
+  background: #f7f7f7;
+  color: #111;
+  font: 700 13px Tahoma, Arial, sans-serif;
+  text-align: center;
+  padding: 1px 6px;
+  box-shadow: inset 1px 1px 0 #ffffff, inset -1px -1px 0 #c5c5c5;
+}
+
+.legacy-input:disabled {
+  background: #f0f0f0;
+  color: #111;
+}
+
+.month-input {
+  width: 102px;
+}
+
+.month-year-input {
+  width: 64px;
+}
+
+.akfal-row:nth-child(2) {
+  grid-template-columns: 56px 102px 64px 1fr;
+}
+
+.year-row {
+  grid-template-columns: 56px 102px 1fr 190px;
+}
+
+.year-input {
+  color: #111;
+}
+
+.stock-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  color: #c51f1f !important;
+  font-weight: 700;
+  direction: rtl;
+}
+
+.stock-close input {
+  width: 14px;
+  height: 14px;
+  margin: 0;
+}
+
+.akfal-checks {
+  margin: 6px 22px 10px;
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  color: #005091;
+  font-size: 11px;
+}
+
+.akfal-checks span {
+  border: 1px solid #8db4d1;
+  background: #d8edf9;
+  padding: 2px 7px;
+}
+
+.akfal-checks span.fail {
+  color: #b00000;
+  background: #f7dede;
+  border-color: #d09898;
+}
+
+@media (max-width: 720px) {
+  .akfal-window {
+    left: 432px;
+    right: auto;
+    top: 247px;
+    width: 510px;
+    transform: none;
+  }
+
+  .akfal-row,
+  .akfal-row:nth-child(2),
+  .year-row {
+    height: auto;
+    grid-template-columns: 50px 1fr;
+  }
+
+  .akfal-row label,
+  .stock-close {
+    grid-column: 1 / -1;
+  }
+}

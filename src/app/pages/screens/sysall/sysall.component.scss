@@ -1,0 +1,372 @@
+// ─────────────────────────────────────────────────────────────────
+//   SYSALL — شاشة الإعدادات العامة
+//   Visual language = Oracle Forms 6i "legacy" palette (same tokens
+//   as sndkd.component.scss). Light-blue chrome, bordered panels,
+//   dense 12px Tahoma, explicit .ico toolbar buttons.
+// ─────────────────────────────────────────────────────────────────
+
+:host { display: block; height: 100%; }
+
+.sysall-legacy {
+  
+  top: 193px;
+  
+  width: 704px;
+  height: 382px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  direction: rtl;
+  gap: 0;
+  padding: 0;
+  background: #a9c8e6;
+  border: 1px solid #6f8294;
+  box-shadow: 1px 1px 0 #ffffff inset, -1px -1px 0 #7f9cb6 inset;
+  color: #0b0b0b;
+  font-family: Tahoma, Arial, sans-serif;
+  font-size: 12px;
+  overflow: hidden;
+  
+}
+
+.sysall-titlebar {
+  height: 29px;
+  min-height: 29px;
+  box-sizing: border-box;
+  border: 1px solid #7aa3c7;
+  border-bottom-color: #5f86a7;
+  background: linear-gradient(#d4e8f8, #A8C8E6);
+  display: flex;
+  align-items: center;
+  direction: ltr;
+  padding: 2px 5px;
+}
+
+.window-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  background: url('/legacy-icons/w.ico') center / contain no-repeat;
+}
+
+.sysall-titlebar h2 {
+  flex: 1;
+  margin: 0;
+  color: #536170;
+  font: 400 12px Tahoma, Arial, sans-serif;
+  text-align: right;
+  direction: rtl;
+}
+
+.window-close {
+  width: 30px;
+  height: 21px;
+  border: 1px solid #8094a9;
+  border-radius: 2px;
+  background: linear-gradient(#f5fbff, #bdd3e4);
+  color: #3c4e5f;
+  font: 700 14px Arial, sans-serif;
+  line-height: 16px;
+  padding: 0;
+  cursor: pointer;
+}
+
+// ─── Message bar (error / info) ─────────────────────────────
+.msg-bar {
+  min-height: 24px;
+  border: 1px solid #8aa1b8;
+  background: #d7e9f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 8px;
+  font-size: 12px;
+}
+.msg-bar.msg-error {
+  background: #ffe3e3;
+  border-color: #d98f8f;
+  color: #8a1f1f;
+}
+.msg-bar.msg-info {
+  background: #e9f6e5;
+  border-color: #98b89a;
+  color: #214d2c;
+}
+.msg-close {
+  border: 1px solid #8da2b7;
+  background: #f5f7fa;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+// ─── Toolbar ────────────────────────────────────────────────
+.toolbar-row {
+  border: 1px solid #6e8fb0;
+  background: #a9c8e6;
+  min-height: 38px;
+  height: 38px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 2px 6px;
+  direction: ltr;
+}
+
+.toolbar-icons {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  gap: 3px;
+}
+
+.toolbar-title {
+  font: 700 13px Tahoma, Arial, sans-serif;
+  color: #0f2f50;
+  direction: rtl;
+  padding-inline-start: 10px;
+}
+
+.tb-btn {
+  width: 39px;
+  height: 31px;
+  border: 1px solid #7f7f7f;
+  background: #ececec;
+  color: transparent;
+  cursor: pointer;
+  padding: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 18px 18px;
+}
+.tb-btn i { display: none; }
+.tb-btn:hover:not(:disabled) { background-color: #f7f7f7; }
+.tb-btn:disabled { opacity: 0.35; cursor: default; }
+
+.tb-btn.tb-save    { background-image: url('/legacy-icons/s.ico'); }
+.tb-btn.tb-back    { background-image: url('/legacy-icons/z.ico'); }
+.tb-btn.tb-exit    { background-image: url('/legacy-icons/in.ico'); }
+.tb-btn.tb-back    { display: none; }
+.tb-btn.tb-refresh {
+  background-image: url('/legacy-icons/nn.png') !important;
+  background-size: 18px 18px !important;
+}
+
+// ─── Tab strip (the 5 SYSALL tabs) ─────────────────────────
+.tabs-strip {
+  display: flex;
+  flex-direction: row-reverse; // RTL tab order — matches the screenshot
+  align-items: flex-end;
+  gap: 2px;
+  padding: 0 6px;
+  border-bottom: 1px solid #7a9bbc;
+  background: #a9c8e6;
+  min-height: 30px;
+  height: 30px;
+  box-sizing: border-box;
+}
+
+.tab-btn {
+  border: 1px solid #7a9bbc;
+  border-bottom: none;
+  background: #c6d8ea;
+  color: #163754;
+  font: 700 12px Tahoma, Arial, sans-serif;
+  height: 26px;
+  padding: 0 14px;
+  cursor: pointer;
+  border-radius: 3px 3px 0 0;
+  white-space: nowrap;
+}
+
+.tab-btn:hover:not(.tab-active) { background: #d7e3f1; }
+
+.tab-btn.tab-active {
+  background: #f0f5fa;
+  color: #0a2742;
+  height: 28px;
+  border-bottom: 1px solid #f0f5fa; // merges into the body
+  position: relative;
+  z-index: 1;
+  font-weight: 700;
+}
+
+// ─── Tab body ───────────────────────────────────────────────
+.tab-body {
+  flex: 1;
+  min-height: 0;
+  background: #f0f5fa;
+  border: 1px solid #7a9bbc;
+  border-top: none;
+  padding: 8px;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.loading-panel {
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #163754;
+  font-weight: 700;
+}
+
+// ─── Two-column layout used inside a tab ────────────────────
+.split-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.split-two .col {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.col-right  { background: #e7eff7; border: 1px solid #7a9bbc; padding: 8px; }
+.col-left   { background: #e7eff7; border: 1px solid #7a9bbc; padding: 8px; }
+
+// ─── Section panel (nested box within a tab) ────────────────
+.panel {
+  border: 1px solid #7a9bbc;
+  background: #e7eff7;
+}
+
+.section-panel {
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-title {
+  background: #a9c8e6;
+  border-bottom: 1px solid #7a9bbc;
+  padding: 3px 8px;
+  font-weight: 700;
+  color: #0a2742;
+  font-size: 12px;
+}
+
+.panel-body {
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.panel-body.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.color-grid {
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px 12px;
+}
+
+// ─── Form row (label + input) ───────────────────────────────
+.f-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  align-items: center;
+  gap: 6px;
+}
+
+.f-lbl {
+  font-weight: 700;
+  color: #111;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.f-input {
+  height: 24px;
+  border: 1px solid #7f8f9f;
+  background: #efefef;
+  padding: 0 6px;
+  font-family: inherit;
+  font-size: 12px;
+  min-width: 0;
+  width: 100%;
+}
+
+.f-input:focus {
+  outline: none;
+  border-color: #244d78;
+  background: #ffffff;
+}
+
+.f-input:disabled {
+  background: #e8e8e8;
+  color: #1f1f1f;
+}
+
+.f-select { padding-inline-end: 18px; }
+
+.f-num-small { max-width: 100px; }
+
+.f-wide { width: 100%; }
+
+.f-inline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.inline-hint {
+  font-size: 11px;
+  color: #355d87;
+  white-space: nowrap;
+}
+
+// ─── Checkboxes (legacy look with bigger hit target) ────────
+.legacy-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+  cursor: pointer;
+  min-height: 22px;
+}
+
+.legacy-check input[type="checkbox"],
+.legacy-check input[type="radio"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.legacy-check span {
+  color: #0b0b0b;
+  line-height: 1.3;
+}
+
+.legacy-check-hint {
+  margin: -2px 24px 2px 0;
+  color: #355d87;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.block-check {
+  margin-top: 4px;
+  padding: 6px 8px;
+  background: #e7eff7;
+  border: 1px solid #7a9bbc;
+}
+
+// ─── Responsive fallback for narrow windows ─────────────────
+@media (max-width: 960px) {
+  .sysall-legacy {
+    left: 331px;
+    top: 193px;
+    width: 704px;
+    height: 382px;
+  }
+}

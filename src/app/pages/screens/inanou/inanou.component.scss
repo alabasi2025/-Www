@@ -1,0 +1,270 @@
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
+.inanou-root {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #b7d5ed;
+  color: #001b37;
+  font: 12px Tahoma, Arial, sans-serif;
+}
+
+.inanou-toolbar-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
+button,
+input,
+select {
+  border-radius: 0;
+  font: 12px Tahoma, Arial, sans-serif;
+}
+
+button {
+  min-height: 23px;
+  padding: 2px 8px;
+  border: 1px solid;
+  border-color: #ffffff #6f879d #6f879d #ffffff;
+  background: #dce6ee;
+  color: #082f55;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:active:not(:disabled) {
+  border-color: #6f879d #ffffff #ffffff #6f879d;
+  background: #cbd8e2;
+}
+
+button:disabled {
+  color: #697985;
+  cursor: default;
+}
+
+.legacy-panel {
+  border: 1px solid #6f8aa3;
+  background: #c2ddf2;
+  margin: 4px;
+  box-shadow: inset 1px 1px 0 #eaf6ff, inset -1px -1px 0 #8aa9c4;
+}
+
+.legacy-caption {
+  min-height: 24px;
+  padding: 5px 8px 4px;
+  border-bottom: 1px solid #6f8aa3;
+  background: #8fd0e4;
+  color: #002a54;
+  font-weight: 700;
+  text-align: center;
+}
+
+.filters-grid {
+  display: grid;
+  grid-template-columns: 150px 150px minmax(190px, 1fr) auto;
+  gap: 7px;
+  align-items: end;
+  padding: 8px;
+}
+
+label {
+  display: grid;
+  gap: 3px;
+  color: #001b37;
+  font-weight: 700;
+}
+
+input,
+select {
+  height: 24px;
+  border: 1px solid #6f879d;
+  background: #edf0f2;
+  box-shadow: inset 1px 1px 0 #7a8b99, inset -1px -1px 0 #ffffff;
+  color: #111827;
+  padding: 3px 5px;
+}
+
+input:focus,
+select:focus,
+button:focus {
+  outline: 1px dotted #003f73;
+  outline-offset: -3px;
+}
+
+.actions-box {
+  display: inline-flex;
+  gap: 5px;
+  justify-content: flex-end;
+}
+
+.actions-box button {
+  min-width: 122px;
+  display: inline-grid;
+  place-items: center;
+}
+
+.actions-box small {
+  font-size: 10px;
+  font-weight: 400;
+  color: #335d7e;
+}
+
+.actions-box .primary {
+  color: #004f80;
+}
+
+.actions-box .danger {
+  border-color: #ffffff #8e5b5b #8e5b5b #ffffff;
+  background: #e6d4d4;
+  color: #6f1010;
+}
+
+.inanou-layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 4px;
+  padding: 0 4px 4px;
+}
+
+.table-panel,
+.notes-panel { display: none; }
+
+.grid-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  direction: rtl;
+  font: 12px Tahoma, Arial, sans-serif;
+}
+
+th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  height: 24px;
+  padding: 3px 5px;
+  border: 1px solid #577f99;
+  background: #62c7df;
+  color: #001b37;
+  font-weight: 700;
+}
+
+td {
+  min-height: 22px;
+  padding: 3px 5px;
+  border: 1px solid #7f96aa;
+  background: #e7e7e7;
+  vertical-align: top;
+}
+
+tr:nth-child(even) td {
+  background: #f4f4f4;
+}
+
+.empty {
+  padding: 18px;
+  text-align: center;
+  color: #4f5e6b;
+}
+
+.legacy-notes {
+  padding: 8px;
+  display: grid;
+  gap: 4px;
+  color: #14334f;
+  line-height: 1.5;
+}
+
+.legacy-notes span {
+  padding: 4px 6px;
+  border: 1px solid #8ba3b8;
+  background: #d7e9f7;
+}
+
+@media (max-width: 900px) {
+  .filters-grid,
+  .inanou-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .actions-box {
+    justify-content: stretch;
+  }
+
+  .actions-box button {
+    flex: 1;
+  }
+}
+
+
+/* Legacy MDI window extracted from Oracle Forms chrome. */
+.inanou-root {
+  
+  left: 184px !important;
+  top: 100px !important;
+  
+  width: 1040px !important;
+  height: 560px !important;
+  min-height: 0 !important;
+  box-sizing: border-box;
+  overflow: hidden !important;
+  background: #a9c8e6 !important;
+  border: 1px solid #6f8294;
+  box-shadow: 1px 1px 0 #ffffff inset, -1px -1px 0 #7f9cb6 inset;
+  
+}
+
+.inanou-titlebar {
+  height: 29px;
+  min-height: 29px;
+  box-sizing: border-box;
+  border: 1px solid #7aa3c7;
+  border-bottom-color: #5f86a7;
+  background: linear-gradient(#d4e8f8, #A8C8E6);
+  display: flex;
+  align-items: center;
+  direction: ltr;
+  padding: 2px 5px;
+}
+
+.inanou-titlebar .window-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  background: url('/legacy-icons/w.ico') center / contain no-repeat;
+}
+
+.inanou-titlebar h2 {
+  flex: 1;
+  margin: 0;
+  color: #536170;
+  font: 400 12px Tahoma, Arial, sans-serif;
+  text-align: right;
+  direction: rtl;
+}
+
+.inanou-titlebar .window-close {
+  width: 30px;
+  height: 21px;
+  border: 1px solid #8094a9;
+  border-radius: 2px;
+  background: linear-gradient(#f5fbff, #bdd3e4);
+  color: #3c4e5f;
+  font: 700 14px Arial, sans-serif;
+  line-height: 16px;
+  padding: 0;
+  cursor: pointer;
+}

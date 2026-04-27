@@ -1,0 +1,13 @@
+@if (open()) {
+  <div class="legacy-dialog-backdrop" (click)="onBackdrop()">
+    <div class="legacy-dialog" (click)="$event.stopPropagation()" dir="rtl">
+      <div class="legacy-dialog-title">
+        <span>{{ title() }}</span>
+        <button type="button" (click)="onBackdrop()"><i class="pi pi-times"></i></button>
+      </div>
+      <div class="legacy-dialog-body">
+        <ng-content />
+      </div>
+    </div>
+  </div>
+}

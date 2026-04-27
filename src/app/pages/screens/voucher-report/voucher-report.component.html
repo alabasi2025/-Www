@@ -1,0 +1,92 @@
+<app-legacy-window [title]="title()" class="voucher-report-window">
+<div class="voucher-report" dir="rtl">
+
+  <section class="filter-panel">
+    <label>
+      <span>من تاريخ</span>
+      <input type="date" [ngModel]="dateFrom()" (ngModelChange)="dateFrom.set($event)" />
+    </label>
+    <label>
+      <span>إلى تاريخ</span>
+      <input type="date" [ngModel]="dateTo()" (ngModelChange)="dateTo.set($event)" />
+    </label>
+    <label class="memo-field">
+      <span>بحث في البيان / الرقم / المستلم</span>
+      <input type="search" [ngModel]="memo()" (ngModelChange)="memo.set($event)" />
+    </label>
+    <label>
+      <span>الحالة</span>
+      <select [ngModel]="posted()" (ngModelChange)="posted.set($event)">
+        <option value="">الكل</option>
+        <option value="1">مرحل</option>
+        <option value="0">غير مرحل</option>
+      </select>
+    </label>
+    <label>
+      <span>أقل مبلغ</span>
+      <input type="number" [ngModel]="minAmount()" (ngModelChange)="minAmount.set($event)" />
+    </label>
+    <label>
+      <span>أكبر مبلغ</span>
+      <input type="number" [ngModel]="maxAmount()" (ngModelChange)="maxAmount.set($event)" />
+    </label>
+    <button class="run-btn" type="button" (click)="run()" [disabled]="loading()">
+      {{ loading() ? 'جاري التحميل...' : 'بحث' }}
+    </button>
+    <button class="export-btn" type="button" (click)="exportCsv()" [disabled]="loading() || rows().length === 0">
+      Excel
+    </button>
+  </section>
+
+  @if (err()) {
+    <div class="msg err">{{ err() }}</div>
+  } @else if (info()) {
+    <div class="msg info">{{ info() }}</div>
+  }
+
+  <div class="summary-strip">
+    <span>عدد السندات: <strong>{{ rows().length }}</strong></span>
+    <span>الإجمالي: <strong>{{ totalAmount() | number:'1.2-2' }}</strong></span>
+    <span>الشاشة الأصلية: <strong>{{ reportCode() }}</strong></span>
+  </div>
+
+  <div class="grid-wrap">
+    <table class="legacy-grid">
+      <thead>
+        <tr>
+          <th>رقم السند</th>
+          <th>التاريخ</th>
+          <th>الحساب</th>
+          <th>الصندوق</th>
+          <th>المبلغ</th>
+          <th>رقم القيد</th>
+          <th>الحالة</th>
+          <th>البيان</th>
+          <th>فتح</th>
+          <th>طباعة</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track row.NOS) {
+          <tr>
+            <td>{{ rowNo(row) }}</td>
+            <td>{{ row.DATES | date:'dd/MM/yyyy' }}</td>
+            <td><span class="mono">{{ row.NOA || '' }}</span> {{ row.NAMEA || '' }}</td>
+            <td><span class="mono">{{ row.NOSN || '' }}</span> {{ row.CASHBOX_NAME || '' }}</td>
+            <td class="amount">{{ (row.TOTALS || 0) | number:'1.2-2' }}</td>
+            <td>{{ row.NOK || '' }}</td>
+            <td>
+              <span class="state" [class.posted]="row.MRHL === 0">{{ statusText(row) }}</span>
+            </td>
+            <td class="memo">{{ row.MEMOS || row.NAMEB || '' }}</td>
+            <td><button type="button" (click)="openVoucher(row.NOS)">فتح</button></td>
+            <td><button type="button" (click)="printVoucher(row.NOS)">طباعة</button></td>
+          </tr>
+        } @empty {
+          <tr><td colspan="10" class="empty">لا توجد نتائج</td></tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+</app-legacy-window>

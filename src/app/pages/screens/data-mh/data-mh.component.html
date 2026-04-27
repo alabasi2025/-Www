@@ -1,0 +1,126 @@
+﻿<div class="mh-legacy" dir="rtl">
+
+  @if (err() || info()) {
+    <div class="msg-bar" [class.msg-error]="!!err()" [class.msg-info]="!err() && !!info()">
+      <span>{{ err() || info() }}</span>
+      <button type="button" class="msg-close" (click)="clearMessages()"><i class="pi pi-times"></i></button>
+    </div>
+  }
+
+  <div class="toolbar-row screen-caption" dir="ltr">
+    <div class="toolbar-icons">
+      <button class="tb-btn tb-new" type="button" title="F2 جديد"
+              (click)="onNew()" [disabled]="!canIns() || editable() || saving() || loading()">
+        <i class="pi pi-plus"></i>
+      </button>
+      <button class="tb-btn tb-save" type="button" title="F10 حفظ"
+              (click)="onSave()" [disabled]="!editable() || saving()">
+        <i class="pi pi-save"></i>
+      </button>
+      <button class="tb-btn tb-back" type="button" title="F7 تراجع"
+              (click)="onCancel()" [disabled]="!editable() || saving()">
+        <i class="pi pi-replay"></i>
+      </button>
+      <button class="tb-btn tb-edit" type="button" title="F8 تعديل"
+              (click)="onEdit()" [disabled]="!canEd() || !hasCurrent() || editable() || saving()">
+        <i class="pi pi-pencil"></i>
+      </button>
+      <button class="tb-btn tb-delete" type="button" title="F6 حذف"
+              (click)="onDelete()" [disabled]="!canDeleteCurrent()">
+        <i class="pi pi-trash"></i>
+      </button>
+      <button class="tb-btn tb-search" type="button" title="F3 بحث"
+              (click)="focusSearch()" [disabled]="!canSar() || saving()">
+        <i class="pi pi-search"></i>
+      </button>
+      <button class="tb-btn tb-exit" type="button" title="Esc خروج"
+              (click)="onExit()" [disabled]="saving()">
+        <i class="pi pi-sign-out"></i>
+      </button>
+    </div>
+    <div class="toolbar-title">{{ windowTitle }}</div>
+  </div>
+
+  <div class="body-row">
+    <div class="panel form-panel">
+      <div class="form-grid">
+        <div class="f-field field-nog">
+          <label>رقم المخزن</label>
+          <input type="number" class="f-input" dir="ltr" min="1"
+                 [ngModel]="form().NOG"
+                 (ngModelChange)="updateField('NOG', +$event || null)"
+                 [disabled]="mode() !== 'new'" />
+        </div>
+
+        <div class="f-field field-name">
+          <label>اسم المخزن</label>
+          <input type="text" class="f-input" maxlength="60"
+                 [ngModel]="form().NAMEG"
+                 (ngModelChange)="updateField('NAMEG', $event)"
+                 [disabled]="!editable()" />
+        </div>
+
+        <div class="f-field field-address">
+          <label>عنوان وموقع المخزن</label>
+          <input type="text" class="f-input" maxlength="100"
+                 [ngModel]="form().ADR"
+                 (ngModelChange)="updateField('ADR', $event)"
+                 [disabled]="!editable()" />
+        </div>
+
+        <div class="f-field field-nameam">
+          <label>أمين المخزن</label>
+          <input type="text" class="f-input" maxlength="60"
+                 [ngModel]="form().NAMEAM"
+                 (ngModelChange)="updateField('NAMEAM', $event)"
+                 [disabled]="!editable()" />
+        </div>
+
+        <div class="f-field field-tel">
+          <label>تلفون المخزن</label>
+          <input type="text" class="f-input" dir="ltr" maxlength="20"
+                 [ngModel]="form().TEL"
+                 (ngModelChange)="updateField('TEL', $event)"
+                 [disabled]="!editable()" />
+        </div>
+
+        <div class="f-field field-usem">
+          <label class="label-danger">المخزن الافتراضي للمستخدم</label>
+          <select class="f-input" [ngModel]="form().USEM" (ngModelChange)="onUserChange($event)" [disabled]="!editable()">
+            <option [ngValue]="null"></option>
+            @if (form().USEM && !users().length) {
+              <option [ngValue]="form().USEM">{{ form().USEM }}</option>
+            }
+            @for (u of users(); track trackByUser($index, u)) {
+              <option [ngValue]="u.NOU">{{ u.NAMEU }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel list-panel">
+      <div class="list-search">
+        <input #legacySearchInput class="f-input" placeholder="بحث بالرقم أو الاسم"
+               [ngModel]="search()" (ngModelChange)="search.set($event)" />
+      </div>
+      <div class="list-scroll">
+        @if (loading()) {
+          <div class="list-empty"><i class="pi pi-spin pi-spinner"></i></div>
+        } @else if (filtered().length === 0) {
+          <div class="list-empty">لا توجد مخازن</div>
+        } @else {
+          @for (r of filtered(); track trackByNog($index, r)) {
+            <button type="button" class="list-item"
+                    [class.list-item-active]="r.NOG === selected()"
+                    (click)="openRow(r.NOG)"
+                    [disabled]="editable() || saving()">
+              <span class="li-num">{{ r.NOG }}</span>
+              <span class="li-name">{{ r.NAMEG || '—' }}</span>
+            </button>
+          }
+        }
+      </div>
+    </div>
+  </div>
+</div>

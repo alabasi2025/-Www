@@ -1,0 +1,39 @@
+<div class="repday-legacy" dir="rtl">
+  <app-legacy-status-bar [error]="err()" (dismiss)="clearMessages()" />
+  <app-legacy-toolbar screen="REPDAY" mode="browse" [saving]="loading()" title="اليومية العامة"
+    [actions]="['exit','search','refresh']"
+    [enabledRules]="{exit:true,search:!loading(),refresh:!loading()}"
+    (action)="onToolbarAction($event)" />
+  <div class="legacy-frame">
+    <div class="report-params">
+      <div class="rparam"><label>من تاريخ</label><input type="date" [ngModel]="paramFrom()" (ngModelChange)="paramFrom.set($event)" /></div>
+      <div class="rparam"><label>إلى تاريخ</label><input type="date" [ngModel]="paramTo()" (ngModelChange)="paramTo.set($event)" /></div>
+      <button class="report-btn" (click)="runReport()" [disabled]="loading()">{{ loading() ? 'جاري...' : 'عرض التقرير' }}</button>
+    </div>
+    @if (searched()) {
+      <div class="report-grid">
+        <table>
+          <thead><tr><th>#</th><th>التاريخ</th><th>الحساب</th><th>مدين</th><th>دائن</th><th>البيان</th></tr></thead>
+          <tbody>
+            @for (r of rows(); track $index) {
+              <tr>
+                <td>{{ $index + 1 }}</td>
+                <td>{{ r['DATES'] || r['DATEMO'] || '' }}</td>
+                <td>{{ r['NOA'] || '' }}</td>
+                <td class="num">{{ r['MDIN'] || r['TOTALFY'] || '' }}</td>
+                <td class="num">{{ r['DAN'] || '' }}</td>
+                <td>{{ r['MEMOS'] || r['MEMOS1'] || r['NAMEA'] || '' }}</td>
+              </tr>
+            }
+            @if (!rows().length) { <tr><td colspan="6" class="empty">لا توجد بيانات</td></tr> }
+          </tbody>
+        </table>
+        <div class="report-footer">
+          <span>{{ rows().length }} سجل</span>
+          @if (totalMdin()) { <span>مجموع المدين: <strong>{{ totalMdin() | number:'1.0-2' }}</strong></span> }
+          @if (totalDan()) { <span>مجموع الدائن: <strong>{{ totalDan() | number:'1.0-2' }}</strong></span> }
+        </div>
+      </div>
+    }
+  </div>
+</div>

@@ -1,0 +1,118 @@
+﻿<div class="sys-sms-root" dir="rtl">
+  <header class="sys-sms-titlebar" dir="ltr">
+    <span class="window-icon" aria-hidden="true"></span>
+    <h2>تقرير الرسائل</h2>
+    <button type="button" class="window-close" title="خروج" (click)="onToolbarAction('exit')" [disabled]="loading()">×</button>
+  </header>
+
+  <app-legacy-toolbar
+    screen="SYS_SMS.FMX"
+    mode="browse"
+    [permissionModel]="permissionModel()"
+    [saving]="loading()"
+    [hasCurrent]="filteredRows().length > 0"
+    title="تقرير الرسائل"
+    [countBadge]="filteredRows().length + ' رسالة'"
+    [actions]="['exit','search','refresh','print','cancel']"
+    [enabledRules]="{
+      exit: true,
+      search: !loading(),
+      refresh: !loading(),
+      print: !loading() && filteredRows().length > 0,
+      cancel: !loading()
+    }"
+    (action)="onToolbarAction($event)">
+    <div class="toolbar-hint">
+      <span>F6 طباعة</span>
+      <span>F7 تنظيف</span>
+      <span>F8 بحث/تحديث</span>
+      <span>Esc إغلاق الرسائل</span>
+    </div>
+  </app-legacy-toolbar>
+
+  <app-legacy-status-bar [error]="err()" [info]="info()" [badges]="statusBadges()" (dismiss)="clearMessages()" />
+
+  <section class="legacy-window">
+    <div class="window-title">نافذة تقرير الرسائل SYS_SMS</div>
+
+    <div class="filters-panel">
+      <label>
+        <span>من تاريخ</span>
+        <input type="date" [ngModel]="dateFrom()" (ngModelChange)="dateFrom.set($event)" />
+      </label>
+
+      <label>
+        <span>إلى تاريخ</span>
+        <input type="date" [ngModel]="dateTo()" (ngModelChange)="dateTo.set($event)" />
+      </label>
+
+      <label>
+        <span>الحالة</span>
+        <select [ngModel]="status()" (ngModelChange)="setStatus($event)">
+          <option value="">الكل</option>
+          <option value="0">غير مرسل</option>
+          <option value="1">مرسل</option>
+          <option value="2">فشل الارسال</option>
+        </select>
+      </label>
+
+      <label>
+        <span>النص / الجوال</span>
+        <input type="search" [ngModel]="text()" (ngModelChange)="text.set($event)" placeholder="بحث في الرسالة أو الرقم" />
+      </label>
+
+      <label>
+        <span>المرسل / الحساب</span>
+        <input type="search" [ngModel]="sender()" (ngModelChange)="sender.set($event)" placeholder="F أو الاسم أو رقم الحساب" />
+      </label>
+
+      <button type="button" class="run-btn" (click)="refresh()" [disabled]="loading()">بحث</button>
+    </div>
+
+    <div class="grid-frame">
+      <table>
+        <thead>
+          <tr>
+            <th class="c-id">رقم</th>
+            <th class="c-date">التاريخ</th>
+            <th class="c-time">الوقت</th>
+            <th class="c-status">الحالة</th>
+            <th class="c-phone">الجوال</th>
+            <th class="c-name">الاسم</th>
+            <th>نص الرسالة</th>
+            <th class="c-sender">المرسل</th>
+            <th class="c-type">النوع</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading()) {
+            <tr>
+              <td colspan="9" class="empty">جاري تحميل تقرير الرسائل...</td>
+            </tr>
+          } @else {
+            @for (row of filteredRows(); track $index) {
+              <tr>
+                <td class="c-id">{{ row.CUSTOMERN }}</td>
+                <td class="c-date">{{ rowDateDisplay(row) }}</td>
+                <td class="c-time">{{ rowTimeDisplay(row) }}</td>
+                <td class="c-status">
+                  <span class="status-pill" [ngClass]="statusClass(row)">{{ statusLabel(row) }}</span>
+                </td>
+                <td class="c-phone" dir="ltr">{{ row.PHONENO }}</td>
+                <td class="c-name">{{ row.CUSTOMERNAME }}</td>
+                <td class="msg-cell">{{ rowMessage(row) }}</td>
+                <td class="c-sender">{{ row.F || row.NOA || '-' }}</td>
+                <td class="c-type">{{ row.TYPESMS || row.NOAML || '-' }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="empty">لا توجد نتائج ضمن الفلاتر الحالية</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+</div>
+

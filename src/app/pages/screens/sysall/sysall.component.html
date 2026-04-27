@@ -1,0 +1,475 @@
+<div class="sysall-legacy" dir="rtl">
+  <header class="sysall-titlebar" dir="ltr">
+    <span class="window-icon" aria-hidden="true"></span>
+    <h2>شاشة الاعدادات العامة</h2>
+    <button type="button" class="window-close" title="خروج" (click)="onExit()" [disabled]="saving()">×</button>
+  </header>
+
+  <!-- ═══ message bar ═══ -->
+  @if (err() || info()) {
+    <div class="msg-bar" [class.msg-error]="!!err()" [class.msg-info]="!err() && !!info()">
+      <span>{{ err() || info() }}</span>
+      <button type="button" class="msg-close" (click)="clearMessages()"><i class="pi pi-times"></i></button>
+    </div>
+  }
+
+  <!-- ═══ toolbar ═══ -->
+  <div class="toolbar-row" dir="ltr">
+    <div class="toolbar-icons">
+      <button class="tb-btn tb-save" type="button" title="حفظ التعديلات"
+              (click)="save()" [disabled]="!isAdmin() || !dirty() || saving() || loading()">
+        <i class="pi pi-save"></i>
+      </button>
+      <button class="tb-btn tb-back" type="button" title="تراجع"
+              (click)="revert()" [disabled]="!dirty() || saving() || loading()">
+        <i class="pi pi-replay"></i>
+      </button>
+      <button class="tb-btn tb-exit" type="button" title="خروج"
+              (click)="onExit()" [disabled]="saving()">
+        <i class="pi pi-sign-out"></i>
+      </button>
+    </div>
+    <div class="toolbar-title">شاشة الإعدادات العامة</div>
+  </div>
+
+  <!-- ═══ tabs header ═══ -->
+  <div class="tabs-strip">
+    @for (t of tabs; track t.key) {
+      <button type="button" class="tab-btn"
+              [class.tab-active]="active() === t.key"
+              (click)="setTab(t.key)">{{ t.label }}</button>
+    }
+  </div>
+
+  @if (loading()) {
+    <div class="panel loading-panel">
+      <i class="pi pi-spin pi-spinner"></i>
+      <span>جاري تحميل الإعدادات...</span>
+    </div>
+  } @else {
+
+  <!-- ══════════════════════════════════════════════════════════════
+        1) خيارات عامة
+       ══════════════════════════════════════════════════════════════ -->
+  @if (active() === 'general') {
+    <div class="tab-body">
+      <div class="split-two">
+        <!-- Right column (first in RTL flow) — checkboxes -->
+        <div class="col col-right">
+          <label class="legacy-check">
+            <input type="checkbox" [ngModel]="form().KY === 1"
+                   (ngModelChange)="update('KY', $event ? 1 : 0)" [disabled]="!isAdmin()" />
+            <span>الاقفال اليومي آلياً</span>
+          </label>
+
+          <label class="legacy-check">
+            <input type="checkbox" [ngModel]="form().IHSAB === 1"
+                   (ngModelChange)="update('IHSAB', $event ? 1 : 0)" [disabled]="!isAdmin()" />
+            <span>تسلسل أرقام الحسابات آلياً</span>
+          </label>
+
+          <label class="legacy-check">
+            <input type="checkbox" [ngModel]="form().INSDS === 1"
+                   (ngModelChange)="update('INSDS', $event ? 1 : 0)" [disabled]="!isAdmin()" />
+            <span>السماح للمستخدمين بإدخال تاريخ سابق</span>
+          </label>
+
+          <label class="legacy-check">
+            <input type="checkbox" [ngModel]="form().AMLH1 === 1"
+                   (ngModelChange)="update('AMLH1', $event ? 1 : 0)" [disabled]="!isAdmin()" />
+            <span>نظام العملات عملة واحدة فقط للحساب</span>
+          </label>
+
+          <label class="legacy-check">
+            <input type="checkbox" [ngModel]="form().MRT === 1"
+                   (ngModelChange)="update('MRT', $event ? 1 : 0)" [disabled]="!isAdmin()" />
+            <span>تفعيل حقل مركز التكلفة في المستندات</span>
+          </label>
+
+          <label class="legacy-check">
+            <input type="checkbox" [ngModel]="form().MRT2 === 1"
+                   (ngModelChange)="update('MRT2', $event ? 1 : 0)"
+                   [disabled]="!isAdmin() || form().MRT !== 1" />
+            <span>إدخال مركز التكلفة إجباري</span>
+          </label>
+
+          <label class="legacy-check">
+            <input type="checkbox" [ngModel]="form().T_MRT_U === 1"
+                   (ngModelChange)="update('T_MRT_U', $event ? 1 : 0)" [disabled]="!isAdmin()" />
+            <span>تفعيل خيار ربط المستخدمين بمراكز التكلفة</span>
+          </label>
+
+          <label class="legacy-check">
+            <input type="checkbox" [ngModel]="form().SANDT === 1"
+                   (ngModelChange)="onSandtChange($event)"
+                   [disabled]="!isAdmin() || sandtLockedBySystem()" />
+            <span>إلغاء عملية ترحيل المستندات آلياً — سيتم الترحيل يدوياً</span>
+          </label>
+          <div class="legacy-check-hint">
+            @if (sandtLockedBySystem()) {
+              النظام الفرعي الحالي يفرض الترحيل الآلي كما في القديم.
+            } @else {
+              غير محدد = ترحيل آلي عند الحفظ، محدد = الترحيل يدوي.
+            }
+          </div>
+
+          <label class="legacy-check">
+            <input type="checkbox" [ngModel]="form().P_R_SNDK === 1"
+                   (ngModelChange)="update('P_R_SNDK', $event ? 1 : 0)" [disabled]="!isAdmin()" />
+            <span>رصيد الحساب في شاشة الإدخال للمستندات المرحلة فقط</span>
+          </label>
+        </div>
+
+        <!-- Left column (second in RTL flow) — dropdowns / fields -->
+        <div class="col col-left">
+          <div class="f-row">
+            <label class="f-lbl">التاريخ التلقائي للمستندات</label>
+            <select class="f-input f-select" [disabled]="!isAdmin()"
+                    [ngModel]="form().INDATE" (ngModelChange)="update('INDATE', +$event || 0)">
+              <option [ngValue]="0">تاريخ الجهاز</option>
+              <option [ngValue]="1">تاريخ آخر مستند تم إدخاله</option>
+              <option [ngValue]="2">تاريخ آخر مستند للمستند الحالي</option>
+            </select>
+          </div>
+
+          <div class="f-row">
+            <label class="f-lbl">توقيف العملاء بعد</label>
+            <div class="f-inline">
+              <input type="number" class="f-input f-num-small" min="0"
+                     [ngModel]="form().QXZ" (ngModelChange)="update('QXZ', +$event || 0)"
+                     [disabled]="!isAdmin()" />
+              <span class="inline-hint">يوم من آخر مديونية</span>
+            </div>
+          </div>
+
+          <div class="f-row">
+            <label class="f-lbl">اسم الجهاز الرئيسي</label>
+            <input type="text" class="f-input" maxlength="200"
+                   [ngModel]="form().PCS" (ngModelChange)="update('PCS', $event)"
+                   [disabled]="!isAdmin()" />
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════════════════
+        2) الترويسة والتذييل
+       ══════════════════════════════════════════════════════════════ -->
+  @if (active() === 'header') {
+    <div class="tab-body">
+      <div class="panel section-panel">
+        <div class="panel-title">بيانات رأس التقرير — الجانب الأيمن</div>
+        <div class="panel-body stack">
+          @for (i of [1,2,3,4]; track i) {
+            <div class="f-row">
+              <label class="f-lbl">عنوان {{ i }}</label>
+              <input type="text" class="f-input f-wide" maxlength="100"
+                     [ngModel]="getStr('N' + i)"
+                     (ngModelChange)="onDynStr('N', i, $event)"
+                     [disabled]="!isAdmin()" />
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="panel section-panel">
+        <div class="panel-title">بيانات رأس التقرير — الجانب الأيسر</div>
+        <div class="panel-body stack">
+          @for (i of [1,2,3,4]; track i) {
+            <div class="f-row">
+              <label class="f-lbl">عنوان {{ i }}</label>
+              <input type="text" class="f-input f-wide" maxlength="150"
+                     [ngModel]="getStr('NA' + i)"
+                     (ngModelChange)="onDynStr('NA', i, $event)"
+                     [disabled]="!isAdmin()" />
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="panel section-panel">
+        <div class="panel-title">عناوين إضافية / النص السفلي</div>
+        <div class="panel-body stack">
+          @for (i of [1,2,3,4]; track i) {
+            <div class="f-row">
+              <label class="f-lbl">عنوان إضافي {{ i }}</label>
+              <input type="text" class="f-input f-wide" maxlength="150"
+                     [ngModel]="getStr('NF' + i)"
+                     (ngModelChange)="onDynStr('NF', i, $event)"
+                     [disabled]="!isAdmin()" />
+            </div>
+          }
+
+          <div class="f-row">
+            <label class="f-lbl">الاسم التجاري / التوقيع</label>
+            <input type="text" class="f-input f-wide" maxlength="500"
+                   [ngModel]="form().MEWAEL" (ngModelChange)="update('MEWAEL', $event)"
+                   [disabled]="!isAdmin()" />
+          </div>
+
+          <div class="f-row">
+            <label class="f-lbl">إشعار كشف الحساب</label>
+            <input type="text" class="f-input f-wide" maxlength="150"
+                   [ngModel]="form().MEMO" (ngModelChange)="update('MEMO', $event)"
+                   [disabled]="!isAdmin()" />
+          </div>
+
+          <div class="f-row">
+            <label class="f-lbl">ملاحظة فواتير الموردين</label>
+            <input type="text" class="f-input f-wide" maxlength="150"
+                   [ngModel]="form().MEMO2" (ngModelChange)="update('MEMO2', $event)"
+                   [disabled]="!isAdmin()" />
+          </div>
+
+          <label class="legacy-check">
+            <input type="checkbox" [ngModel]="form().TAHD === 1"
+                   (ngModelChange)="update('TAHD', $event ? 1 : 0)" [disabled]="!isAdmin()" />
+            <span>إظهار نص أسفل صفحة التقرير</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="panel section-panel">
+        <div class="panel-title">خيارات تميّز الحساب الرئيسي بلون في التقارير</div>
+        <div class="panel-body color-grid">
+          <div class="f-row">
+            <label class="f-lbl">لون تنسيق المستندات (CLR)</label>
+            <select class="f-input f-select" [disabled]="!isAdmin()"
+                    [ngModel]="form().CLR" (ngModelChange)="update('CLR', +$event || 0)">
+              <option [ngValue]="0">بدون تمييز</option>
+              <option [ngValue]="1">أسود</option>
+              <option [ngValue]="2">أحمر</option>
+              <option [ngValue]="3">أزرق</option>
+              <option [ngValue]="4">أخضر</option>
+              <option [ngValue]="5">سماوي</option>
+              <option [ngValue]="6">رمادي</option>
+            </select>
+          </div>
+
+          <div class="f-row"><label class="f-lbl">لون الرتبة 1 (C1)</label>
+            <input type="number" min="0" max="6" class="f-input f-num-small"
+                   [ngModel]="form().C1" (ngModelChange)="onColorChange('C1', $event)" [disabled]="!isAdmin()" /></div>
+          <div class="f-row"><label class="f-lbl">لون الرتبة 2 (C2)</label>
+            <input type="number" min="0" max="6" class="f-input f-num-small"
+                   [ngModel]="form().C2" (ngModelChange)="onColorChange('C2', $event)" [disabled]="!isAdmin()" /></div>
+          <div class="f-row"><label class="f-lbl">لون الرتبة 3 (C3)</label>
+            <input type="number" min="0" max="6" class="f-input f-num-small"
+                   [ngModel]="form().C3" (ngModelChange)="onColorChange('C3', $event)" [disabled]="!isAdmin()" /></div>
+          <div class="f-row"><label class="f-lbl">لون الرتبة 4 (C4)</label>
+            <input type="number" min="0" max="6" class="f-input f-num-small"
+                   [ngModel]="form().C4" (ngModelChange)="onColorChange('C4', $event)" [disabled]="!isAdmin()" /></div>
+          <div class="f-row"><label class="f-lbl">لون الحقول (CB)</label>
+            <input type="number" min="0" max="6" class="f-input f-num-small"
+                   [ngModel]="form().CB" (ngModelChange)="onColorChange('CB', $event)" [disabled]="!isAdmin()" /></div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════════════════
+        3) خيارات سندات القبض والصرف
+       ══════════════════════════════════════════════════════════════ -->
+  @if (active() === 'vouchers') {
+    <div class="tab-body">
+      <div class="split-two">
+        <div class="col">
+          <div class="panel section-panel">
+            <div class="panel-title">تسلسل سند القبض</div>
+            <div class="panel-body stack">
+              <label class="legacy-check"><input type="radio" name="nosmm" [value]="0"
+                [ngModel]="form().NOSMM" (ngModelChange)="onVoucherSequenceChange('NOSMM', 0)" [disabled]="!isAdmin()" />
+                <span>عدم التعامل مع رقم السند اليدوي</span></label>
+              <label class="legacy-check"><input type="radio" name="nosmm" [value]="1"
+                [ngModel]="form().NOSMM" (ngModelChange)="onVoucherSequenceChange('NOSMM', 1)" [disabled]="!isAdmin()" />
+                <span>تسلسل واحد لكل الصناديق</span></label>
+              <label class="legacy-check"><input type="radio" name="nosmm" [value]="2"
+                [ngModel]="form().NOSMM" (ngModelChange)="onVoucherSequenceChange('NOSMM', 2)" [disabled]="!isAdmin()" />
+                <span>رقم مدخل + متابعة تسلسل لكل الصناديق</span></label>
+              <label class="legacy-check"><input type="radio" name="nosmm" [value]="3"
+                [ngModel]="form().NOSMM" (ngModelChange)="onVoucherSequenceChange('NOSMM', 3)" [disabled]="!isAdmin()" />
+                <span>تسلسل خاص لكل صندوق</span></label>
+              <label class="legacy-check"><input type="radio" name="nosmm" [value]="4"
+                [ngModel]="form().NOSMM" (ngModelChange)="onVoucherSequenceChange('NOSMM', 4)" [disabled]="!isAdmin()" />
+                <span>رقم آلياً متسلسل خاص بكل صندوق</span></label>
+              <label class="legacy-check"><input type="radio" name="nosmm" [value]="5"
+                [ngModel]="form().NOSMM" (ngModelChange)="onVoucherSequenceChange('NOSMM', 5)" [disabled]="!isAdmin()" />
+                <span>رقم آلياً مستسلسل لكل الصناديق</span></label>
+            </div>
+          </div>
+
+          <div class="f-row">
+            <label class="f-lbl">البيان الآلي لسند القبض (CBK)</label>
+            <input type="text" class="f-input f-wide" maxlength="50"
+                   [ngModel]="form().CBK" (ngModelChange)="update('CBK', $event)"
+                   [disabled]="!isAdmin()" />
+          </div>
+          <label class="legacy-check block-check">
+            <input type="checkbox" [ngModel]="form().TBK === 1"
+                   (ngModelChange)="update('TBK', $event ? 1 : 0)" [disabled]="!isAdmin()" />
+            <span>عدم كتابة اسم الصندوق في البيان</span>
+          </label>
+        </div>
+
+        <div class="col">
+          <div class="panel section-panel">
+            <div class="panel-title">تسلسل سند الصرف</div>
+            <div class="panel-body stack">
+              <label class="legacy-check"><input type="radio" name="nosmms" [value]="0"
+                [ngModel]="form().NOSMMS" (ngModelChange)="onVoucherSequenceChange('NOSMMS', 0)" [disabled]="!isAdmin()" />
+                <span>عدم التعامل مع رقم السند اليدوي</span></label>
+              <label class="legacy-check"><input type="radio" name="nosmms" [value]="1"
+                [ngModel]="form().NOSMMS" (ngModelChange)="onVoucherSequenceChange('NOSMMS', 1)" [disabled]="!isAdmin()" />
+                <span>تسلسل واحد لكل الصناديق</span></label>
+              <label class="legacy-check"><input type="radio" name="nosmms" [value]="2"
+                [ngModel]="form().NOSMMS" (ngModelChange)="onVoucherSequenceChange('NOSMMS', 2)" [disabled]="!isAdmin()" />
+                <span>رقم مدخل + متابعة تسلسل لكل الصناديق</span></label>
+              <label class="legacy-check"><input type="radio" name="nosmms" [value]="3"
+                [ngModel]="form().NOSMMS" (ngModelChange)="onVoucherSequenceChange('NOSMMS', 3)" [disabled]="!isAdmin()" />
+                <span>تسلسل خاص لكل صندوق</span></label>
+              <label class="legacy-check"><input type="radio" name="nosmms" [value]="4"
+                [ngModel]="form().NOSMMS" (ngModelChange)="onVoucherSequenceChange('NOSMMS', 4)" [disabled]="!isAdmin()" />
+                <span>رقم آلياً متسلسل خاص بكل صندوق</span></label>
+              <label class="legacy-check"><input type="radio" name="nosmms" [value]="5"
+                [ngModel]="form().NOSMMS" (ngModelChange)="onVoucherSequenceChange('NOSMMS', 5)" [disabled]="!isAdmin()" />
+                <span>رقم آلياً مستسلسل لكل الصناديق</span></label>
+            </div>
+          </div>
+
+          <div class="f-row">
+            <label class="f-lbl">البيان الآلي لسند الصرف (CBS)</label>
+            <input type="text" class="f-input f-wide" maxlength="50"
+                   [ngModel]="form().CBS" (ngModelChange)="update('CBS', $event)"
+                   [disabled]="!isAdmin()" />
+          </div>
+          <label class="legacy-check block-check">
+            <input type="checkbox" [ngModel]="form().TBS === 1"
+                   (ngModelChange)="update('TBS', $event ? 1 : 0)" [disabled]="!isAdmin()" />
+            <span>عدم كتابة اسم الصندوق في البيان</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════════════════
+        4) نظام الرسائل
+       ══════════════════════════════════════════════════════════════ -->
+  @if (active() === 'sms') {
+    <div class="tab-body">
+      <div class="panel section-panel">
+        <div class="panel-title">نوع نظام الرسائل</div>
+        <div class="panel-body stack">
+          <label class="legacy-check"><input type="radio" name="tsms" [value]="1"
+            [ngModel]="form().TSMS" (ngModelChange)="update('TSMS', 1)" [disabled]="!isAdmin()" />
+            <span>ربط مباشر وإرسال يدوي</span></label>
+          <label class="legacy-check"><input type="radio" name="tsms" [value]="2"
+            [ngModel]="form().TSMS" (ngModelChange)="update('TSMS', 2)" [disabled]="!isAdmin()" />
+            <span>ربط مباشر وإرسال بعد الحفظ</span></label>
+          <label class="legacy-check"><input type="radio" name="tsms" [value]="3"
+            [ngModel]="form().TSMS" (ngModelChange)="update('TSMS', 3)" [disabled]="!isAdmin()" />
+            <span>نظام الرسائل غير مباشر</span></label>
+        </div>
+      </div>
+
+      <div class="panel section-panel">
+        <div class="panel-title">استخدام نظام الأندرويد للإرسال</div>
+        <div class="panel-body stack">
+          <label class="legacy-check"><input type="radio" name="t_sms" [value]="1"
+            [ngModel]="form().T_SMS" (ngModelChange)="update('T_SMS', 1)" [disabled]="!isAdmin()" />
+            <span>استخدام نظام الأندرويد 140 حرف للرسالة</span></label>
+          <label class="legacy-check"><input type="radio" name="t_sms" [value]="2"
+            [ngModel]="form().T_SMS" (ngModelChange)="update('T_SMS', 2)" [disabled]="!isAdmin()" />
+            <span>استخدام نظام الأندرويد 70 حرف للرسالة</span></label>
+          <label class="legacy-check"><input type="radio" name="t_sms" [value]="3"
+            [ngModel]="form().T_SMS" (ngModelChange)="update('T_SMS', 3)" [disabled]="!isAdmin()" />
+            <span>استخدام نظام المودم USB 70 حرف</span></label>
+        </div>
+      </div>
+
+      <div class="panel section-panel">
+        <div class="panel-title">إضافة التاريخ للرسالة</div>
+        <div class="panel-body stack">
+          <label class="legacy-check"><input type="radio" name="inda_sms" [value]="1"
+            [ngModel]="form().INDA_SMS" (ngModelChange)="update('INDA_SMS', 1)" [disabled]="!isAdmin()" />
+            <span>اليوم فقط</span></label>
+          <label class="legacy-check"><input type="radio" name="inda_sms" [value]="2"
+            [ngModel]="form().INDA_SMS" (ngModelChange)="update('INDA_SMS', 2)" [disabled]="!isAdmin()" />
+            <span>التاريخ واليوم</span></label>
+          <label class="legacy-check"><input type="radio" name="inda_sms" [value]="3"
+            [ngModel]="form().INDA_SMS" (ngModelChange)="update('INDA_SMS', 3)" [disabled]="!isAdmin()" />
+            <span>التاريخ</span></label>
+        </div>
+      </div>
+
+      <div class="panel section-panel">
+        <div class="panel-title">خيارات عامة للرسائل</div>
+        <div class="panel-body stack">
+          <label class="legacy-check">
+            <input type="checkbox" [ngModel]="form().SMS_SRB === 1"
+                   (ngModelChange)="update('SMS_SRB', $event ? 1 : 0)" [disabled]="!isAdmin()" />
+            <span>إرسال رسائل للنزلاء</span>
+          </label>
+
+          <div class="f-row">
+            <label class="f-lbl">رقم المرسل (NWSMS)</label>
+            <input type="text" class="f-input" maxlength="50"
+                   [ngModel]="form().NWSMS" (ngModelChange)="update('NWSMS', $event)"
+                   [disabled]="!isAdmin()" />
+          </div>
+
+          <div class="f-row">
+            <label class="f-lbl">مجلد حفظ ملفات PDF</label>
+            <input type="text" class="f-input f-wide" maxlength="50"
+                   [ngModel]="form().V_PDF" (ngModelChange)="update('V_PDF', $event)"
+                   [disabled]="!isAdmin()" />
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════════════════
+        5) خيارات النسخ الاحتياطي
+       ══════════════════════════════════════════════════════════════ -->
+  @if (active() === 'backup') {
+    <div class="tab-body">
+      <div class="panel section-panel">
+        <div class="panel-body stack">
+          <div class="f-row">
+            <label class="f-lbl">الاسم الافتراضي للنسخة الاحتياطية</label>
+            <input type="text" class="f-input f-wide" maxlength="500"
+                   [ngModel]="form().NAME_COPY1" (ngModelChange)="update('NAME_COPY1', $event)"
+                   [disabled]="!isAdmin()" />
+          </div>
+
+          <label class="legacy-check">
+            <input type="checkbox" [ngModel]="form().TIM_COPY === 1"
+                   (ngModelChange)="update('TIM_COPY', $event ? 1 : 0)" [disabled]="!isAdmin()" />
+            <span>اسم النسخة الاحتياطية يحتوي على وقت وتاريخ</span>
+          </label>
+
+          <div class="f-row">
+            <label class="f-lbl">حذف النسخ الأقدم من</label>
+            <div class="f-inline">
+              <input type="number" class="f-input f-num-small" min="0"
+                     [ngModel]="form().DEL_COPY" (ngModelChange)="update('DEL_COPY', +$event || 0)"
+                     [disabled]="!isAdmin()" />
+              <span class="inline-hint">يوم من آخر نسخة</span>
+            </div>
+          </div>
+
+          <div class="f-row">
+            <label class="f-lbl">عمل نسخة أخرى في القرص</label>
+            <input type="text" class="f-input f-wide" maxlength="500"
+                   [ngModel]="form().NAME_COPY2" (ngModelChange)="update('NAME_COPY2', $event)"
+                   [disabled]="!isAdmin()" />
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  }
+
+</div>

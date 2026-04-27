@@ -1,0 +1,322 @@
+<div class="tm-legacy" dir="rtl">
+  <div class="tm-titlebar" dir="ltr">
+    <span class="tm-window-icon" aria-hidden="true"></span>
+    <span class="tm-window-title">أمر توريد مخزني</span>
+    <button type="button" class="tm-window-close" title="إغلاق" (click)="onExit()">×</button>
+  </div>
+
+  <div class="legacy-toolbar">
+    <div class="legacy-toolbar-actions">
+      <button type="button" class="legacy-icon-btn" title="جديد" (click)="onNew()" [disabled]="saving() || !canIns()"><i class="pi pi-plus"></i></button>
+      <button type="button" class="legacy-icon-btn" title="تعديل" (click)="onEdit()" [disabled]="saving() || !master()['NOS'] || !canEd()"><i class="pi pi-pencil"></i></button>
+      <button type="button" class="legacy-icon-btn" title="حذف" (click)="onDelete()" [disabled]="saving() || !master()['NOS'] || !canDe()"><i class="pi pi-trash"></i></button>
+      <button type="button" class="legacy-icon-btn" title="حفظ" (click)="onSave()" [disabled]="saving() || !editable()"><i class="pi pi-save"></i></button>
+      <button type="button" class="legacy-icon-btn" title="إلغاء" (click)="onCancel()" [disabled]="saving() || !editable()"><i class="pi pi-undo"></i></button>
+      <button type="button" class="legacy-icon-btn" title="تحديث" (click)="fetchMasters()"><i class="pi pi-refresh"></i></button>
+      <button type="button" class="legacy-icon-btn" title="إضافة سطر" (click)="addDetailRow()" [disabled]="!editable()"><i class="pi pi-plus-circle"></i></button>
+      <button type="button" class="legacy-icon-btn" title="حذف آخر سطر" (click)="removeDetailRow(details().length - 1)" [disabled]="!editable() || details().length===0"><i class="pi pi-minus-circle"></i></button>
+      <button type="button" class="legacy-icon-btn" title="أول" (click)="navTo('first')" [disabled]="currentIdx()<=0"><i class="pi pi-angle-double-right"></i></button>
+      <button type="button" class="legacy-icon-btn" title="سابق" (click)="navTo(-1)" [disabled]="currentIdx()<=0"><i class="pi pi-angle-right"></i></button>
+      <button type="button" class="legacy-icon-btn" title="التالي" (click)="navTo(1)" [disabled]="currentIdx()>=masters().length-1"><i class="pi pi-angle-left"></i></button>
+      <button type="button" class="legacy-icon-btn" title="آخر" (click)="navTo('last')" [disabled]="currentIdx()>=masters().length-1"><i class="pi pi-angle-double-left"></i></button>
+      <button type="button" class="legacy-icon-btn" title="طباعة" (click)="onPrint()" [disabled]="!master()['NOS'] || !canPr()"><i class="pi pi-print"></i></button>
+    </div>
+
+    <div class="legacy-toolbar-nav">
+      <input
+        type="search"
+        class="legacy-search"
+        placeholder="بحث..."
+        [ngModel]="search()"
+        (ngModelChange)="search.set($event)" />
+      <select
+        class="legacy-voucher-picker"
+        [ngModel]="master()['NOS'] || ''"
+        (ngModelChange)="onSearchSelect($event)">
+        <option value="">اختر أمر توريد</option>
+        @for (m of filteredMasters(); track m.NOS) {
+          <option [ngValue]="m.NOS">
+            {{ m.NOSON || m.NOS }} - {{ toInputDate(m.DATES) }} - {{ asNum(m.TOTALF) | number:'1.0-2' }}
+          </option>
+        }
+      </select>
+      <span class="legacy-rec">Record: {{ currentIdx() + 1 }}/{{ masters().length || 1 }}</span>
+    </div>
+  </div>
+
+  @if (err()) {
+    <div class="legacy-msg legacy-msg-error">{{ err() }}</div>
+  }
+  @if (info()) {
+    <div class="legacy-msg legacy-msg-info">{{ info() }}</div>
+  }
+
+  <div class="legacy-frame">
+    <div class="legacy-top-grid">
+      <div class="legacy-panel">
+        <div class="legacy-panel-title">بيانات أمر التوريد</div>
+        <div class="legacy-field">
+          <label>رقم أمر التوريد</label>
+          <input type="number"
+                 [ngModel]="master()['NOSON'] || ''"
+                 (ngModelChange)="updateMaster('NOSON', $event)"
+                 [disabled]="!editable()" />
+        </div>
+        <div class="legacy-field">
+          <label>التاريخ</label>
+          <input type="date"
+                 [ngModel]="toInputDate(master()['DATES'])"
+                 (ngModelChange)="updateMaster('DATES', $event)"
+                 [disabled]="!editable()" />
+        </div>
+        <div class="legacy-field">
+          <label>نوع التوريد</label>
+          <select [ngModel]="master()['TYPEMS'] || 21"
+                  (ngModelChange)="updateMaster('TYPEMS', $event)"
+                  [disabled]="!editable()">
+            <option [ngValue]="21">توريد مخزني</option>
+          </select>
+        </div>
+        <div class="legacy-field">
+          <label>رقم المرجع</label>
+          <input type="number"
+                 [ngModel]="master()['NOBN'] || ''"
+                 (ngModelChange)="updateMaster('NOBN', $event)"
+                 [disabled]="!editable()" />
+        </div>
+      </div>
+
+      <div class="legacy-panel">
+        <div class="legacy-panel-title">بيانات المورد</div>
+        <div class="legacy-field">
+          <label>رقم المورد</label>
+          <select [ngModel]="master()['NOA'] || ''"
+                  (ngModelChange)="onSupplierChange($event)"
+                  [disabled]="!editable()">
+            <option value="">-- اختر المورد --</option>
+            @for (s of suppliers(); track s.NOA) {
+              <option [ngValue]="s.NOA">{{ s.NOA }} - {{ s.NAMEA }}</option>
+            }
+          </select>
+        </div>
+        <div class="legacy-field">
+          <label>اسم المورد</label>
+          <input type="text" [value]="supplierName()" disabled />
+        </div>
+        <div class="legacy-field legacy-field-wide">
+          <label>البيان</label>
+          <textarea rows="2"
+                    [ngModel]="master()['MEMOS1'] || ''"
+                    (ngModelChange)="updateMaster('MEMOS1', $event)"
+                    [disabled]="!editable()"></textarea>
+        </div>
+        <div class="legacy-field">
+          <label>مركز التكلفة</label>
+          <input type="number"
+                 [ngModel]="master()['MRT'] || ''"
+                 (ngModelChange)="updateMaster('MRT', $event)"
+                 [disabled]="!editable()" />
+        </div>
+      </div>
+
+      <div class="legacy-panel">
+        <div class="legacy-panel-title">بيانات المخزون والتكلفة</div>
+        <div class="legacy-field">
+          <label>عملة المخزون</label>
+          <select [ngModel]="master()['NOAML2'] || 1"
+                  (ngModelChange)="updateMaster('NOAML2', $event)"
+                  [disabled]="!editable()">
+            @for (c of currencies(); track c.NO) {
+              <option [ngValue]="c.NO">{{ c.NO }} - {{ c.NAMEM3 }}</option>
+            }
+          </select>
+        </div>
+        <div class="legacy-field">
+          <label>سعر الصرف</label>
+          <input type="number"
+                 [ngModel]="master()['SARSF2'] || ''"
+                 (ngModelChange)="updateMaster('SARSF2', $event)"
+                 [disabled]="!editable()" />
+        </div>
+        <div class="legacy-field">
+          <label>المخزن</label>
+          <select [ngModel]="master()['NOMHZND'] || ''"
+                  (ngModelChange)="updateMaster('NOMHZND', $event)"
+                  [disabled]="!editable()">
+            <option value="">--</option>
+            @for (w of warehouses(); track w.NOG) {
+              <option [ngValue]="w.NOG">{{ w.NOG }} - {{ w.NAMEG }}</option>
+            }
+          </select>
+        </div>
+        <div class="legacy-field">
+          <label>المخزن المقابل</label>
+          <select [ngModel]="master()['NOMHZND2'] || ''"
+                  (ngModelChange)="updateMaster('NOMHZND2', $event)"
+                  [disabled]="!editable()">
+            <option value="">--</option>
+            @for (w of warehouses(); track w.NOG) {
+              <option [ngValue]="w.NOG">{{ w.NOG }} - {{ w.NAMEG }}</option>
+            }
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="legacy-grid-panel">
+      <table class="legacy-grid">
+        <thead>
+          <tr>
+            <th class="w-no">رقم الصنف</th>
+            <th class="w-name">اسم الصنف</th>
+            <th class="w-sm">الوحدة</th>
+            <th class="w-sm">العبوة</th>
+            <th class="w-sm">المخزن</th>
+            <th class="w-date">تاريخ الانتهاء</th>
+            <th class="w-num">الكمية</th>
+            <th class="w-num">سعر الوحدة</th>
+            <th class="w-num">خصم</th>
+            <th class="w-num">الإجمالي</th>
+            <th class="w-num">كمية مجاني</th>
+            <th class="w-note">أعباء التوريد</th>
+            @if (editable()) {
+              <th class="w-del"></th>
+            }
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of details(); track d._key; let i = $index) {
+            <tr>
+              <td>
+                <input type="number"
+                       [ngModel]="d.NOA || ''"
+                       (ngModelChange)="updateDetail(i, 'NOA', $event)"
+                       [disabled]="!editable()" />
+              </td>
+              <td>
+                <input type="text" [value]="d.ITEM_NAME || ''" disabled />
+              </td>
+              <td>
+                <input type="text" [value]="d.ITEM_UNIT || ''" disabled />
+              </td>
+              <td>
+                <input type="number"
+                       [ngModel]="d.NOOB || ''"
+                       (ngModelChange)="updateDetail(i, 'NOOB', $event)"
+                       [disabled]="!editable()" />
+              </td>
+              <td>
+                <select [ngModel]="d.NOMHZN || master()['NOMHZND'] || ''"
+                        (ngModelChange)="updateDetail(i, 'NOMHZN', $event)"
+                        [disabled]="!editable()">
+                  <option value="">--</option>
+                  @for (w of warehouses(); track w.NOG) {
+                    <option [ngValue]="w.NOG">{{ w.NOG }}</option>
+                  }
+                </select>
+              </td>
+              <td>
+                <input type="date"
+                       [ngModel]="toInputDate(d.DATEN)"
+                       (ngModelChange)="updateDetail(i, 'DATEN', $event)"
+                       [disabled]="!editable()" />
+              </td>
+              <td>
+                <input type="number"
+                       [ngModel]="d.KMAG || ''"
+                       (ngModelChange)="updateDetail(i, 'KMAG', $event)"
+                       [disabled]="!editable()" />
+              </td>
+              <td>
+                <input type="number"
+                       [ngModel]="d.SARWG || ''"
+                       (ngModelChange)="updateDetail(i, 'SARWG', $event)"
+                       [disabled]="!editable()" />
+              </td>
+              <td>
+                <input type="number"
+                       [ngModel]="d.DISCOUNT || ''"
+                       (ngModelChange)="updateDetail(i, 'DISCOUNT', $event)"
+                       [disabled]="!editable()" />
+              </td>
+              <td>
+                <input type="number" [value]="asNum(d.TOTLSH)" disabled />
+              </td>
+              <td>
+                <input type="number"
+                       [ngModel]="d.FREE_QTY || ''"
+                       (ngModelChange)="updateDetail(i, 'FREE_QTY', $event)"
+                       [disabled]="!editable()" />
+              </td>
+              <td>
+                <input type="text"
+                       [ngModel]="d.MEMOSF || ''"
+                       (ngModelChange)="updateDetail(i, 'MEMOSF', $event)"
+                       [disabled]="!editable()" />
+              </td>
+              @if (editable()) {
+                <td class="del-cell">
+                  <button class="del-btn" (click)="removeDetailRow(i)" title="حذف السطر">
+                    <i class="pi pi-times"></i>
+                  </button>
+                </td>
+              }
+            </tr>
+          }
+
+          @for (p of placeholderRows(); track p) {
+            <tr class="empty-row">
+              <td><input type="text" disabled /></td>
+              <td><input type="text" disabled /></td>
+              <td><input type="text" disabled /></td>
+              <td><input type="text" disabled /></td>
+              <td><input type="text" disabled /></td>
+              <td><input type="text" disabled /></td>
+              <td><input type="text" disabled /></td>
+              <td><input type="text" disabled /></td>
+              <td><input type="text" disabled /></td>
+              <td><input type="text" disabled /></td>
+              <td><input type="text" disabled /></td>
+              <td><input type="text" disabled /></td>
+              @if (editable()) {
+                <td><input type="text" disabled /></td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <div class="legacy-summary">
+      <div class="summary-box">
+        <label>عدد الأصناف</label>
+        <strong>{{ itemCount() }}</strong>
+      </div>
+      <div class="summary-box">
+        <label>إجمالي الخصم</label>
+        <strong>{{ totalDiscount() | number:'1.2-2' }}</strong>
+      </div>
+      <div class="summary-box">
+        <label>الإجمالي الكلي</label>
+        <strong>{{ totalLocal() | number:'1.2-2' }}</strong>
+      </div>
+      <div class="summary-box">
+        <label>الإجمالي بالعملة</label>
+        <strong>{{ totalForeign() | number:'1.2-2' }}</strong>
+      </div>
+      <div class="summary-box summary-box-main">
+        <label>صافي أمر التوريد</label>
+        <strong>{{ totalLocal() | number:'1.2-2' }}</strong>
+      </div>
+    </div>
+
+    <div class="legacy-audit">
+      <div class="legacy-audit-item"><label>مدخل المستند</label><input type="text" [value]="master()['NOUSX'] || ''" disabled /></div>
+      <div class="legacy-audit-item"><label>تاريخ الإدخال</label><input type="text" [value]="toInputDate(master()['DI'])" disabled /></div>
+      <div class="legacy-audit-item"><label>معدل المستند</label><input type="text" [value]="master()['NOUSXU'] || ''" disabled /></div>
+      <div class="legacy-audit-item"><label>تاريخ التعديل</label><input type="text" [value]="toInputDate(master()['DE'])" disabled /></div>
+      <div class="legacy-audit-item"><label>عدد مرات التعديل</label><input type="text" [value]="master()['NED'] || 0" disabled /></div>
+      <div class="legacy-audit-item"><label>عدد مرات الطباعة</label><input type="text" [value]="master()['NPR'] || 0" disabled /></div>
+    </div>
+  </div>
+</div>

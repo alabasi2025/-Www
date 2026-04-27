@@ -1,0 +1,62 @@
+﻿[
+    {
+        "code":  "COPY",
+        "label":  "النسخ الاحتياطي",
+        "baseline":  "/legacy-baselines/system1/COPY.jpg",
+        "resolution":  "1366x768"
+    },
+    {
+        "code":  "DATA_AM",
+        "label":  "بيانات العملاء",
+        "baseline":  "/legacy-baselines/system1/DATA_AM.jpg",
+        "resolution":  "1366x768"
+    },
+    {
+        "code":  "USER",
+        "label":  "بيانات المستخدمين",
+        "baseline":  "/legacy-baselines/system1/USER.jpg",
+        "resolution":  "1366x768"
+    },
+    {
+        "code":  "DATA_MO",
+        "label":  "بيانات الموردين",
+        "baseline":  "/legacy-baselines/system1/DATA_MO.jpg",
+        "resolution":  "1366x768"
+    },
+    {
+        "code":  "DATA_AML",
+        "label":  "تهيئة العملات",
+        "baseline":  "/legacy-baselines/system1/DATA_AML.jpg",
+        "resolution":  "1366x768"
+    },
+    {
+        "code":  "TREE",
+        "label":  "دليل الحسابات",
+        "baseline":  "/legacy-baselines/system1/TREE.jpg",
+        "resolution":  "1366x768"
+    },
+    {
+        "code":  "SNDS",
+        "label":  "سند الصرف",
+        "baseline":  "/legacy-baselines/system1/SNDS.jpg",
+        "resolution":  "1366x768"
+    },
+    {
+        "code":  "SNDK",
+        "label":  "سند القبض",
+        "baseline":  "/legacy-baselines/system1/SNDK.jpg",
+        "resolution":  "1366x768"
+    },
+    {
+        "code":  "AKFAL",
+        "label":  "اقفالات النظام",
+        "baseline":  "/legacy-baselines/system1/AKFAL.jpg",
+        "resolution":  "1366x768"
+    },
+    {
+        "code":  "RSEDIF",
+        "label":  "الارصدة الافتتاحية",
+        "baseline":  "/legacy-baselines/system1/RSEDIF.jpg",
+        "resolution":  "1366x768"
+    }
+]

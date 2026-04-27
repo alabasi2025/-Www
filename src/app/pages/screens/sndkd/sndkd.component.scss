@@ -1,0 +1,330 @@
+/* ══════════════════════════════════════════════════
+   SNDKD — Oracle Forms 6i Pixel-Perfect v5
+   Based on actual screenshot 04/27/2026
+   ══════════════════════════════════════════════════ */
+
+$bg-form:     #C0C0C0;
+$bg-header:   #C0C0C0;
+$bg-toolbar:  #D4D0C8;
+$bg-grid-hdr: #6B8CAE; /* رؤوس الأعمدة — أزرق كما في السكرين شوت الأصلي */
+$bg-total:    #FFB6C1;
+$bg-posted:   #FFE4E1;
+$bg-active:   #87CEEB; /* Cyan/light blue — الصف النشط */
+$c-posted:    #4169E1;
+$c-border:    #808080;
+$c-focus-bg:  #000080;
+$c-green:     #008000;
+$c-red:       #FF0000;
+$font:        Tahoma, Arial, sans-serif;
+
+:host { display: block; height: 100%; }
+
+.ofc {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  direction: rtl;
+  background: $bg-form;
+  font: 12px/1.3 $font;
+  color: #000;
+  overflow: hidden;
+}
+
+/* ─── شريط العنوان ─── */
+.win-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 22px;
+  background: linear-gradient(to left, #0A2B4F, #2668A0);
+  color: #fff; font-weight: 700; font-size: 12px;
+  padding: 0 6px; flex-shrink: 0;
+}
+.win-btns {
+  display: flex; gap: 1px;
+  span {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 18px; height: 16px;
+    background: $bg-toolbar; border: 1px outset #ccc;
+    color: #000; font-size: 11px; cursor: pointer;
+  }
+}
+
+app-legacy-status-bar, app-legacy-toolbar { flex-shrink: 0; }
+
+/* ─── الهيدر ─── */
+.hdr {
+  background: $bg-header;
+  border: 1px solid $c-border;
+  flex-shrink: 0;
+  padding: 4px 6px;
+}
+.hdr-row1 { display: flex; }
+
+.hdr-fields { flex: 1; }
+
+.fields-tbl {
+  width: 100%; border-collapse: collapse;
+  td { padding: 1px 3px; }
+}
+.flbl { font-size: 11px; font-weight: 700; text-align: center; }
+
+.f9-line {
+  display: flex; align-items: center; gap: 6px;
+  padding: 3px 0 0; font-size: 11px;
+}
+.f9t { font-size: 16px; color: #cc0000; font-weight: 700; }
+
+.spinner-control { display: flex; }
+.spinner-control input { flex: 1; min-width: 0; }
+.sp-arrows {
+  display: flex; flex-direction: column;
+  button {
+    height: 10px; width: 16px; border: 1px solid $c-border;
+    background: $bg-toolbar; font-size: 7px; padding: 0; cursor: pointer; line-height: 1;
+  }
+}
+
+.hdr-checks {
+  width: 280px;
+  border-right: 1px solid $c-border;
+  padding: 4px 8px;
+  display: flex; flex-direction: column; gap: 4px;
+}
+
+.chk {
+  display: inline-flex; align-items: center; gap: 4px; cursor: pointer;
+  input[type="checkbox"] { width: 13px; height: 13px; margin: 0; }
+  b { font-size: 11px; }
+  &.green b { color: $c-green; }
+}
+
+/* ─── حقول ─── */
+.fi {
+  height: 20px;
+  border: 1px solid $c-border;
+  background: #fff; padding: 0 3px;
+  font: 12px $font;
+  width: 100%; box-sizing: border-box;
+  &:focus { outline: none; background: $c-focus-bg; color: #fff; }
+  &:disabled, &.fi-ro { background: #E8E8E8; color: #222; }
+}
+.fi-num { font-family: Consolas, monospace; text-align: left; }
+.fi-sm { width: 70px; }
+
+/* ─── شريط التفقيط + تبويب الرصيد ─── */
+.words-bar {
+  display: flex; align-items: center;
+  height: 24px;
+  background: #D0D8E0;
+  border: 1px solid $c-border; border-top: 0;
+  padding: 0 6px; gap: 12px;
+  flex-shrink: 0;
+  direction: rtl;
+}
+.bal-tab {
+  background: $bg-header;
+  border: 1px solid $c-border;
+  padding: 1px 10px;
+  font: bold 11px $font;
+  flex-shrink: 0;
+}
+.words-text {
+  font: bold 12px $font;
+  color: #000;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ─── جدول التفاصيل ─── */
+.grid-wrap {
+  flex: 1;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  border: 1px solid $c-border; border-top: 0;
+  min-height: 0;
+}
+.grid-scroll { flex: 1; overflow: auto; min-height: 0; }
+
+.g {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+
+  /* عرض الأعمدة بالنسب — متناسقة مع المحتوى */
+  .col-noa   { width: 7%; }    /* رقم الحساب */
+  .col-name  { width: 17%; }   /* اسم الحساب */
+  .col-aml   { width: 4%; }    /* العملة */
+  .col-sarf  { width: 6%; }    /* سعر الصرف */
+  .col-mdin  { width: 11%; }   /* مدين محلي */
+  .col-dan   { width: 11%; }   /* دائن محلي */
+  .col-mdinf { width: 10%; }   /* مدين أجنبي */
+  .col-danf  { width: 10%; }   /* دائن أجنبي */
+  .col-memo  { width: 19%; }   /* البيان */
+  .col-mrt   { width: 5%; }    /* مركز التكلفة */
+
+  th {
+    background: $bg-grid-hdr;
+    color: #fff;
+    font: bold 11px $font;
+    text-align: center;
+    padding: 2px 2px; height: 24px;
+    border: 1px solid #5a7b9d;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+
+  td {
+    border: 1px solid #b0b0b0;
+    padding: 0; height: 22px;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  .r-odd td  { background: #fff; }
+  .r-even td { background: #F0F4F8; }
+  .r-active td { background: $bg-active; }
+  .r-empty td { background: #E4E4E4; height: 22px; }
+}
+
+.ci {
+  width: 100%; height: 100%;
+  border: 0; padding: 0 3px;
+  background: transparent;
+  font: 12px $font;
+  &:focus { outline: none; background: $c-focus-bg; color: #fff; }
+  &:disabled { color: #000; }
+}
+.ci-n { text-align: left; font-family: Consolas, monospace; font-size: 12px; }
+
+.name-cell { display: flex; height: 100%; position: relative; }
+.lov-b {
+  width: 18px; border: 0;
+  border-left: 1px solid #b0b0b0;
+  background: $bg-toolbar; cursor: pointer;
+  font-size: 10px; font-weight: bold; flex-shrink: 0;
+  &:hover:not(:disabled) { background: #e8e4de; }
+}
+
+.ta-list {
+  position: absolute; top: 100%; right: 0; left: 0; z-index: 200;
+  background: #fff; border: 1px solid $c-border;
+  list-style: none; padding: 0; margin: 0;
+  max-height: 140px; overflow-y: auto;
+  box-shadow: 2px 2px 6px rgba(0,0,0,.3);
+  li {
+    padding: 2px 6px; cursor: pointer; font-size: 11px;
+    border-bottom: 1px solid #eee;
+    &:hover { background: $c-focus-bg; color: #fff; }
+  }
+}
+
+.del-b {
+  width: 100%; height: 100%;
+  border: 0; background: $c-red; color: #fff;
+  font-weight: bold; cursor: pointer; font-size: 12px;
+}
+
+.grid-act {
+  padding: 2px 4px; background: $bg-form;
+  border-top: 1px solid $c-border; text-align: right;
+}
+.add-b {
+  background: #008000; border: 1px solid #004000;
+  color: #fff; padding: 1px 10px; font: bold 11px $font; cursor: pointer;
+}
+
+/* ─── شريط الإجماليات (مطابق للأصل) ─── */
+.totals-bar {
+  display: flex; align-items: center;
+  justify-content: space-between;
+  min-height: 52px; padding: 4px 8px;
+  background: $bg-form;
+  border: 1px solid $c-border; border-top: 0;
+  flex-shrink: 0;
+}
+
+.totals-right {
+  display: flex; align-items: center; gap: 8px;
+}
+.ftr-type-lbl { font: bold 12px $font; }
+.type-sel { width: 100px; font: bold 12px $font; color: #003; height: 22px; }
+
+.posted-lbl {
+  background: $bg-posted; color: $c-posted;
+  border: 1px solid $c-border;
+  padding: 4px 16px; font: bold 13px $font;
+}
+
+.totals-center {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.tot-group {
+  display: flex; align-items: center; gap: 6px;
+}
+.tot-label {
+  font: bold 12px $font;
+  text-align: left;
+}
+.tot-val {
+  padding: 2px 10px;
+  font: bold 14px Consolas, monospace;
+  min-width: 100px; text-align: center;
+  border: 1px solid $c-border;
+  &.pink { background: $bg-total; }
+  &.red  { background: $c-red; color: #fff; }
+  &.diff { background: #fff; }
+}
+
+/* ─── Audit Trail (مطابق للأصل — صفين) ─── */
+.audit-bar {
+  background: $bg-form;
+  border: 1px solid $c-border; border-top: 0;
+  padding: 3px 6px;
+  flex-shrink: 0;
+}
+.audit-tbl {
+  width: 100%; border-collapse: collapse;
+  td {
+    padding: 2px 4px; font-size: 11px;
+    border: 0;
+    white-space: nowrap;
+    b { font-weight: 700; }
+  }
+}
+
+/* ─── مودال بحث ─── */
+.modal-overlay {
+   inset: 0;
+  background: rgba(0,0,0,.4); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+}
+.search-dlg {
+  background: $bg-form; border: 2px solid $c-border;
+  width: 460px; max-height: 80vh; overflow-y: auto;
+}
+.dlg-hdr {
+  background: linear-gradient(to left, #0A2B4F, #2668A0);
+  color: #fff; font: bold 12px $font;
+  padding: 4px 8px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.x-btn {
+  background: $bg-toolbar; border: 1px outset #ccc;
+  color: #000; width: 20px; height: 18px; cursor: pointer;
+}
+.dlg-body {
+  padding: 8px;
+  display: flex; flex-direction: column; gap: 6px;
+  label { font: bold 11px $font; margin-left: 6px; }
+  input, select { width: 100%; }
+}
+.dlg-ftr {
+  padding: 6px 8px;
+  display: flex; gap: 8px; justify-content: center;
+  button {
+    padding: 2px 16px; font: bold 11px $font;
+    border: 1px solid $c-border; background: $bg-toolbar; cursor: pointer;
+  }
+}

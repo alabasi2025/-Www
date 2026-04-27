@@ -1,0 +1,184 @@
+<main class="workspace">
+  <section class="forms-shell">
+    <header class="forms-header">
+      <div class="forms-title">الاوائل سوفت لانظمة الحاسب</div>
+      <div class="forms-controls" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </header>
+
+    <div class="forms-body">
+      @if (loading()) {
+        <section class="login-window login-window--loading">
+          <div class="window-bar">Al wael Accounting Management System</div>
+          <div class="loading-box">
+            <div class="loader" aria-hidden="true">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <p>جارٍ تجهيز شاشة STARTN...</p>
+          </div>
+        </section>
+      } @else if (!user()) {
+        <section class="login-window">
+          <div class="window-bar">Al wael Accounting Management System</div>
+
+          <div class="window-content">
+            <section class="fields-panel">
+              <form class="fields-grid" (submit)="login($event)">
+                <div class="field-row">
+                  <label class="field-label">الفرع</label>
+                  <div class="field-control select-wrap">
+                    <select [ngModel]="unit()" (ngModelChange)="setUnit($event)" name="unit">
+                      @for (u of units(); track u.NU) {
+                        <option [value]="u.NU">{{ u.NA }}</option>
+                      }
+                      @if (units().length === 0) {
+                        <option value="A">A</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+
+                <div class="field-row">
+                  <label class="field-label">السنه المالية</label>
+                  <div class="field-control">
+                    <input
+                      class="year-input"
+                      type="text"
+                      inputmode="numeric"
+                      maxlength="4"
+                      [ngModel]="year()"
+                      (ngModelChange)="setYear($event)"
+                      name="year"
+                    />
+                  </div>
+                </div>
+
+              <div class="field-row">
+                <label class="field-label">اسم المستخدم</label>
+                  <div class="field-control select-wrap">
+                    <select
+                      class="user-select"
+                      [ngModel]="userId()"
+                      (ngModelChange)="setUserId($event)"
+                      name="userId"
+                    >
+                      <option value="">-- اختر --</option>
+                      @for (u of users(); track u.nou) {
+                        <option [value]="u.nou">{{ u.name }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+
+                <div class="field-row">
+                  <label class="field-label">كلمة المرور</label>
+                  <div class="field-control">
+                    <input
+                      type="password"
+                      autocomplete="current-password"
+                      [ngModel]="password()"
+                      (ngModelChange)="setPassword($event)"
+                      name="password"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div class="field-row">
+                  <label class="field-label">الدخول إلى سنة</label>
+                  <div class="field-control select-wrap">
+                    <select
+                      [ngModel]="entryYear()"
+                      (ngModelChange)="setEntryYear($event)"
+                      name="entryYear"
+                    >
+                      <option value=""></option>
+                      <option [value]="year()">{{ year() }}</option>
+                    </select>
+                  </div>
+                </div>
+
+                @if (error()) {
+                  <p class="error-row">{{ error() }}</p>
+                }
+
+                <div class="buttons-row">
+                  <button class="icon-button icon-button--exit" type="button" (click)="clearLogin()">
+                    <span class="icon icon--exit" aria-hidden="true"></span>
+                  </button>
+
+                  <button class="icon-button icon-button--enter" type="submit" [disabled]="busy()">
+                    @if (busy()) {
+                      <span class="icon icon--enter icon--busy" aria-hidden="true"></span>
+                    } @else {
+                      <span class="icon icon--enter" aria-hidden="true"></span>
+                    }
+                  </button>
+                </div>
+              </form>
+            </section>
+
+            <aside class="brand-panel">
+              <div class="brand-logo" aria-hidden="true">
+                <span class="brand-logo__w">w</span>
+                <span class="brand-logo__s">s</span>
+              </div>
+
+              <div class="brand-footer">
+                <div class="brand-strip"></div>
+                <div class="brand-caption">business &amp; computers</div>
+                <div class="brand-strip"></div>
+                <div class="brand-version">
+                  <span></span>
+                  <strong>17</strong>
+                </div>
+              </div>
+            </aside>
+          </div>
+        </section>
+      } @else {
+        <section class="login-window login-window--session">
+          <div class="window-bar">Al wael Accounting Management System</div>
+
+          <div class="session-panel">
+            <h1>تم تسجيل الدخول</h1>
+
+            <div class="session-grid">
+              <article class="meta">
+                <span>المستخدم</span>
+                <strong>{{ user()!.name }}</strong>
+              </article>
+              <article class="meta">
+                <span>الوحدة</span>
+                <strong>{{ user()!.unit }}</strong>
+              </article>
+              <article class="meta">
+                <span>Schema</span>
+                <strong>{{ user()!.schema }}</strong>
+              </article>
+              <article class="meta">
+                <span>الصلاحية</span>
+                <strong>{{ user()!.isAdmin ? 'مسؤول' : 'مستخدم' }}</strong>
+              </article>
+            </div>
+
+            @if (error()) {
+              <p class="error-row">{{ error() }}</p>
+            }
+
+            <div class="buttons-row buttons-row--session">
+              <button class="text-button" type="button" (click)="logout()" [disabled]="busy()">
+                تسجيل خروج
+              </button>
+            </div>
+          </div>
+        </section>
+      }
+    </div>
+  </section>
+</main>

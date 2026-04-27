@@ -1,0 +1,125 @@
+﻿<div class="kf-root" dir="rtl">
+  <header class="kf-titlebar" dir="ltr">
+    <span class="window-icon" aria-hidden="true"></span>
+    <h2>تخصيص مفاتيح اختصار لفتح الشاشات</h2>
+    <button type="button" class="window-close" title="خروج" (click)="onToolbarAction('exit')" [disabled]="saving()">×</button>
+  </header>
+
+  <app-legacy-toolbar
+    screen="KF.FMX"
+    [mode]="mode()"
+    [saving]="saving()"
+    [hasCurrent]="hasCurrent()"
+    title="تخصيص مفاتيح اختصار لفتح الشاشات"
+    [countBadge]="rows().length + ' مفتاح'"
+    [actions]="['exit','edit','search','refresh','save','cancel']"
+    [enabledRules]="{
+      exit: !saving(),
+      edit: hasCurrent() && !saving() && !editable(),
+      search: !saving() && !editable(),
+      refresh: !saving(),
+      save: editable() && !saving(),
+      cancel: editable() && !saving()
+    }"
+    (action)="onToolbarAction($event)">
+    <div class="kf-toolbar-tools">
+      <button type="button" (click)="navTo('first')" [disabled]="editable() || currentIdx() <= 0">|&lt;</button>
+      <button type="button" (click)="navTo(-1)" [disabled]="editable() || currentIdx() <= 0">&lt;</button>
+      <span>سجل: {{ currentIdx() + 1 }}/{{ filteredRows().length || 1 }}</span>
+      <button type="button" (click)="navTo(1)" [disabled]="editable() || currentIdx() >= filteredRows().length - 1">&gt;</button>
+      <button type="button" (click)="navTo('last')" [disabled]="editable() || currentIdx() >= filteredRows().length - 1">&gt;|</button>
+      <input type="search" placeholder="بحث..." [ngModel]="search()" (ngModelChange)="search.set($event)" />
+    </div>
+  </app-legacy-toolbar>
+
+  <app-legacy-status-bar
+    [error]="err()"
+    [info]="info()"
+    [badges]="statusBadges()"
+    (dismiss)="clearMessages()" />
+
+  <div class="kf-layout">
+    <aside class="kf-list">
+      <div class="panel-title">المفاتيح</div>
+      <div class="list-body">
+        @if (loading()) {
+          <div class="empty">جاري التحميل...</div>
+        } @else {
+          @for (row of filteredRows(); track row.KEYF) {
+            <button
+              type="button"
+              class="key-card"
+              [class.active]="row.KEYF === current()?.KEYF"
+              (click)="selectRow(row)">
+              <span class="key-code">{{ row.KEYF }}</span>
+              <span class="key-name">{{ labelFor(row) }}</span>
+            </button>
+          } @empty {
+            <div class="empty">لا توجد مفاتيح</div>
+          }
+        }
+      </div>
+    </aside>
+
+    <main class="kf-work">
+      <section class="legacy-window">
+        <div class="window-title">بيانات المفتاح</div>
+        <div class="form-grid">
+          <label>
+            <span>المفتاح</span>
+            <input [value]="current()?.KEYF || ''" disabled dir="ltr" />
+          </label>
+
+          <label class="wide">
+            <span>الشاشة</span>
+            <select
+              [ngModel]="current()?.FIELN || ''"
+              (ngModelChange)="patch({ FIELN: $event || null })"
+              [disabled]="!editable()">
+              <option value="">غير مخصص</option>
+              @for (screen of filteredScreens(); track screen.NAMEF) {
+                <option [value]="screen.NAMEF">{{ screen.NAMEA || screen.NAMEE || screen.NAMEF }} - {{ screen.NAMEF }}</option>
+              }
+            </select>
+          </label>
+
+          <label>
+            <span>بحث عن شاشة</span>
+            <input
+              [ngModel]="screenSearch()"
+              (ngModelChange)="screenSearch.set($event)"
+              [disabled]="!editable()"
+              placeholder="اسم أو كود الشاشة" />
+          </label>
+
+          <label>
+            <span>كود الشاشة</span>
+            <input [value]="current()?.FIELN || ''" disabled dir="ltr" />
+          </label>
+
+          <label class="wide">
+            <span>اسم الشاشة</span>
+            <input [value]="current()?.NAMEA || current()?.NAMEE || ''" disabled />
+          </label>
+        </div>
+      </section>
+
+      <section class="legacy-window help-window">
+        <div class="window-title">وظائف مفاتيح الاختصارات داخل الشاشات</div>
+        <div class="legacy-help">
+          <span>F10 جديد وحفظ</span>
+          <span>F9 البحث عن اسم حساب</span>
+          <span>F8 تعديل</span>
+          <span>F7 تراجع</span>
+          <span>F6 طباعة</span>
+          <span>F5 الاستعلام عن صنف</span>
+          <span>F3 للبحث</span>
+          <span>F1 لعرض آخر سجل مدخل ثم استخدام الأسهم للتنقل بين السجلات</span>
+          <span>Esc خروج / تراجع</span>
+          <span>ALT+F4 خروج</span>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+

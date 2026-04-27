@@ -1,0 +1,29 @@
+<div class="legacy-toolbar" dir="ltr">
+  <div class="legacy-toolbar-icons">
+    @for (item of items(); track item.id) {
+      <button
+        type="button"
+        class="lgt-btn"
+        [class.lgt-show-label]="showLabels()"
+        [attr.data-action]="item.id"
+        [disabled]="item.disabled"
+        [title]="item.title"
+        [style.background-image]="'url(' + item.iconAsset + ')'"
+        (click)="onClick(item)">
+        @if (showLabels()) { <span>{{ item.label }}</span> }
+      </button>
+    }
+  </div>
+
+  <div class="legacy-toolbar-right">
+    @if (title()) {
+      <div class="legacy-toolbar-title">
+        @if (icon()) { <i class="pi {{ icon() }}"></i> }
+        <span>{{ title() }}</span>
+        @if (countBadge()) { <span class="legacy-toolbar-badge">{{ countBadge() }}</span> }
+      </div>
+    }
+
+    <ng-content />
+  </div>
+</div>

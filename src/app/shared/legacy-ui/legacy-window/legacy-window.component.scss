@@ -1,0 +1,29 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.legacy-window {
+  height: 100%;
+  border: 1px solid var(--legacy-panel-border);
+  background: var(--legacy-window-bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.legacy-window-title {
+  min-height: 24px;
+  display: flex;
+  align-items: center;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--legacy-panel-border);
+  background: linear-gradient(to right, #2f5c8a 0%, #7fa6cd 100%);
+  color: #fff;
+  font: 700 12px Tahoma, Arial, sans-serif;
+}
+
+.legacy-window-body {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}

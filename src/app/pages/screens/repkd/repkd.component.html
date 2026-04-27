@@ -1,0 +1,71 @@
+<app-legacy-window [title]="screenTitle()" class="journal-report-window">
+<div class="repkd-screen" dir="rtl">
+  <div class="filter-panel">
+    <div class="f">
+      <label>من تاريخ</label>
+      <input type="date" [ngModel]="dateFrom()" (ngModelChange)="dateFrom.set($event)" />
+    </div>
+    <div class="f">
+      <label>إلى تاريخ</label>
+      <input type="date" [ngModel]="dateTo()" (ngModelChange)="dateTo.set($event)" />
+    </div>
+    <div class="f f-memo">
+      <label>البيان</label>
+      <input type="text" [ngModel]="memo()" (ngModelChange)="memo.set($event)" />
+    </div>
+    <div class="f">
+      <label>الحالة</label>
+      <select [ngModel]="posted()" (ngModelChange)="posted.set($event)">
+        <option value="">الكل</option>
+        <option value="1">مرحل</option>
+        <option value="0">غير مرحل</option>
+      </select>
+    </div>
+    <button class="run-btn" type="button" (click)="run()" [disabled]="loading()">
+      {{ loading() ? 'جاري التحميل...' : 'بحث' }}
+    </button>
+  </div>
+
+  @if (err()) {
+    <div class="msg err">{{ err() }}</div>
+  } @else if (info()) {
+    <div class="msg info">{{ info() }}</div>
+  }
+
+  <div class="summary-strip">
+    <span>عدد القيود: <strong>{{ rows().length }}</strong></span>
+    <span>الشاشة الأصلية: <strong>{{ screenCode() }}</strong></span>
+  </div>
+
+  <div class="grid-wrap">
+    <table class="grid">
+      <thead>
+        <tr>
+          <th>رقم القيد</th>
+          <th>تاريخ القيد</th>
+          <th>رقم المرجع</th>
+          <th>الإجمالي</th>
+          <th>الحالة</th>
+          <th>البيان</th>
+          <th>فتح</th>
+          <th>طباعة</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (r of rows(); track r.NOS) {
+          <tr>
+            <td>{{ r.NOSON || r.NOS }}</td>
+            <td>{{ r.DATES | date:'dd/MM/yyyy' }}</td>
+            <td>{{ r.NOK || '' }}</td>
+            <td>{{ rowTotal(r) | number:'1.2-2' }}</td>
+            <td>{{ r.MRHL === 0 ? 'مرحل' : 'غير مرحل' }}</td>
+            <td>{{ rowMemo(r) }}</td>
+            <td><button type="button" (click)="openVoucher(r.NOS)">فتح</button></td>
+            <td><button type="button" (click)="printVoucher(r.NOS)">طباعة</button></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+</app-legacy-window>

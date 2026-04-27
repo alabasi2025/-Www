@@ -1,0 +1,359 @@
+<!--
+  ════════════════════════════════════════════════════════════════
+  TREE.fmb — Oracle Forms 6i 1:1 twin
+  Layout reproduced from the reference screenshot supplied by user
+  (23/04/2026). No speculative additions: only items actually present
+  on the original TREE.fmb canvas are rendered.
+  ════════════════════════════════════════════════════════════════
+-->
+<div class="legacy-desktop" dir="rtl">
+  <div class="legacy-dialog"
+       [class.maximized]="maximized()"
+       [class.minimized]="minimized()"
+       tabindex="0"
+       role="dialog"
+       aria-label="دليل الحسابات"
+       (keydown)="onKeydown($event)">
+
+    <!-- Title bar — matches the blue gradient seen in the reference -->
+    <div class="dialog-title">
+      <div class="dialog-title-buttons">
+        <button type="button" class="dtb dtb-min"   title="تصغير" (click)="onMinimize()">_</button>
+        <button type="button" class="dtb dtb-max"   title="تكبير" (click)="onMaximize()">☐</button>
+        <button type="button" class="dtb dtb-close" title="إغلاق" (click)="ex1()">✕</button>
+      </div>
+      <div class="dialog-title-text">دليل الحسابات</div>
+    </div>
+
+    <div class="tree-legacy">
+
+      <app-legacy-status-bar [error]="err()" [info]="info()" (dismiss)="clearMessages()" />
+
+      <!-- ══ Cascading header: 4 NOA level selectors + بحث ═══ -->
+      <div class="cont-row">
+        <div class="cont-cell">
+          <select class="f-input f-sel" dir="rtl" title="المستوى 1"
+                  [ngModel]="noa1()" (ngModelChange)="onNoa1Change($event)">
+            <option [ngValue]="null"></option>
+            @for (o of noa1Options(); track o.NOA) {
+              <option [ngValue]="o.NOA">{{ o.NAMEA }}</option>
+            }
+          </select>
+        </div>
+        <div class="cont-cell">
+          <select class="f-input f-sel" dir="rtl" title="المستوى 2"
+                  [ngModel]="noa2()" (ngModelChange)="onNoa2Change($event)">
+            <option [ngValue]="null"></option>
+            @for (o of noa2Options(); track o.NOA) {
+              <option [ngValue]="o.NOA">{{ o.NAMEA }}</option>
+            }
+          </select>
+        </div>
+        <div class="cont-cell">
+          <select class="f-input f-sel" dir="rtl" title="المستوى 3"
+                  [ngModel]="noa3()" (ngModelChange)="onNoa3Change($event)">
+            <option [ngValue]="null"></option>
+            @for (o of noa3Options(); track o.NOA) {
+              <option [ngValue]="o.NOA">{{ o.NAMEA }}</option>
+            }
+          </select>
+        </div>
+        <div class="cont-cell">
+          <select class="f-input f-sel" dir="rtl" title="المستوى 4"
+                  [ngModel]="noa4()" (ngModelChange)="onNoa4Change($event)">
+            <option [ngValue]="null"></option>
+            @for (o of noa4Options(); track o.NOA) {
+              <option [ngValue]="o.NOA">{{ o.NAMEA }}</option>
+            }
+          </select>
+        </div>
+        <div class="cont-spacer"></div>
+        <div class="cont-search">
+          <span class="cont-search-label">بحث</span>
+          <input type="text" class="f-input" dir="rtl" title="بحث بالاسم أو الرقم"
+                 [ngModel]="snamea()" (ngModelChange)="onSnameaInput($event)"
+                 (keydown.enter)="onSnameaSearch()" />
+        </div>
+      </div>
+
+      <!-- ══ Body: left tree + right form area ═══════════════════ -->
+      <div class="tree-body">
+
+        <!-- Left: TR.HTREE hierarchical tree -->
+        <div class="sidebar">
+          <div class="sidebar-tree">
+            @if (loading()) {
+              <div class="sb-loading"><i class="pi pi-spin pi-spinner"></i></div>
+            }
+            @for (row of flatRows(); track trackByNoa($index, row)) {
+              <div class="sb-node"
+                   [class.sb-active]="selected()?.NOA === row.acc.NOA"
+                   [class.sb-editing]="selected()?.NOA === row.acc.NOA && mode() === 'edit'"
+                   [class.sb-new]="mode() === 'new' && row.acc.NOA === form().TYPEA"
+                   [class.sb-frozen]="(row.acc.TWKFX ?? 0) > 0"
+                   [class.sb-hidden]="row.acc.NOKYED === 1"
+                   [style.padding-inline-start.px]="6 + row.depth * 14"
+                   (click)="selectAccount(row.acc)">
+                @if (row.children.length > 0) {
+                  <button class="sb-toggle" (click)="$event.stopPropagation(); toggleExpand(row.acc.NOA)"
+                          [title]="row.expanded ? 'طيّ' : 'فتح'">
+                    {{ row.expanded ? '-' : '+' }}
+                  </button>
+                } @else {
+                  <span class="sb-leaf"></span>
+                }
+                <span class="sb-folder" [class.sb-folder-empty]="row.children.length === 0"></span>
+                <span class="sb-name">{{ row.acc.NAMEA }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- Right: DATA_A form + SNF grid + toolbar -->
+        <div class="main-panel">
+
+          <!-- Row 1: NOA / RTBA / 5 (readonly typea hint) -->
+          <div class="m-row m-row-top">
+            <div class="m-field m-noa">
+              <label>رقم الحساب</label>
+              <input type="number" class="f-input" dir="ltr"
+                     [ngModel]="form().NOA"
+                     (ngModelChange)="setField('NOA', +$event || null)"
+                     [disabled]="mode() !== 'new'" />
+            </div>
+            <div class="m-field m-rtba">
+              <label>الرتبة</label>
+              <input type="number" class="f-input" dir="ltr" min="1" max="5"
+                     [ngModel]="form().RTBA"
+                     (ngModelChange)="setField('RTBA', +$event || null)"
+                     [disabled]="!editable()" />
+            </div>
+            <div class="m-field m-typea">
+              <input type="number" class="f-input f-readonly" dir="ltr" readonly
+                     [value]="form().TYPEA ?? ''" title="نوع الحساب" />
+            </div>
+          </div>
+
+          <!-- Row 2: NAMEA (full width) -->
+          <div class="m-row">
+            <div class="m-field m-wide">
+              <label>اسم الحساب</label>
+              <input type="text" class="f-input" maxlength="100"
+                     [ngModel]="form().NAMEA"
+                     (ngModelChange)="setField('NAMEA', $event)"
+                     (blur)="onNameaBlur()"
+                     [disabled]="!editable()" />
+            </div>
+          </div>
+
+          <!-- Row 3: AHSAR + HALL checkbox  +  SNF grid to the right -->
+          <div class="m-split">
+            <div class="m-left">
+              <div class="m-row">
+                <div class="m-field m-ahsar">
+                  <label>اختصار للبحث</label>
+                  <input type="text" class="f-input" maxlength="10"
+                         [ngModel]="form().AHSAR"
+                         (ngModelChange)="setField('AHSAR', $event)"
+                         [disabled]="!editable()" />
+                </div>
+                <div class="m-field m-hall">
+                  <label class="legacy-check">
+                    <input type="checkbox"
+                           [ngModel]="form().HALL === 1"
+                           (ngModelChange)="setField('HALL', $event ? 1 : 0)"
+                           [disabled]="!editable()" />
+                    <span>حساب عام</span>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Row 4: MEMOH (full width) -->
+              <div class="m-row">
+                <div class="m-field m-wide">
+                  <label>ملاحظة</label>
+                  <input type="text" class="f-input" maxlength="300"
+                         [ngModel]="form().MEMOH"
+                         (ngModelChange)="setField('MEMOH', $event)"
+                         [disabled]="!editable()" />
+                </div>
+              </div>
+
+              <!-- Row 5: TWKFX — تجميد الحساب (red label as in reference) -->
+              <div class="m-row">
+                <div class="m-field m-twkfx">
+                  <label class="label-red">تجميد الحساب</label>
+                  <select class="f-input" dir="rtl"
+                          [ngModel]="form().TWKFX ?? 0"
+                          (ngModelChange)="setField('TWKFX', +$event)"
+                          [disabled]="!editable()">
+                    <option [ngValue]="0"></option>
+                    <option [ngValue]="1">السقف</option>
+                    <option [ngValue]="2">تجميد للعمليات المدينة والتنبيه في العمليات الدائنة</option>
+                    <option [ngValue]="3" [disabled]="!canFreeze()">تجميد كامل</option>
+                  </select>
+                  <button type="button" class="props-link"
+                          (click)="openPropsModal()"
+                          [disabled]="!selected()"
+                          title="خصائص إضافية (F2)">
+                    F2 خصائص
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- SNF grid (عملات الحساب / توقيف / السقف) -->
+            <div class="m-right">
+              <table class="snf-grid">
+                <thead>
+                  <tr>
+                    <th class="th-aml">عملات الحساب</th>
+                    <th class="th-stop">توقيف</th>
+                    <th class="th-skf">السقف</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (r of snfRows(); track trackByNoaml($index, r)) {
+                    <tr [class.row-stopped]="r.HLS === 1" [class.row-general]="r.HALLS === 1">
+                      <td>{{ currencyNameById(r.NOAML) }}</td>
+                      <td class="td-check">
+                        <input type="checkbox"
+                               [ngModel]="r.HLS === 1"
+                               (ngModelChange)="toggleSnfFlag(r, 'HLS', $event ? 1 : 0)"
+                               [disabled]="!selected() || snfSaving()"
+                               title="توقيف هذه العملة" />
+                      </td>
+                      <td class="td-num">
+                        <span>{{ r.SKF ? (r.SKF | number: '1.0-2') : '' }}</span>
+                        <button type="button"
+                                class="snf-flag-btn"
+                                (click)="toggleSnfFlag(r, 'HALLS', r.HALLS === 1 ? 0 : 1)"
+                                [disabled]="!selected() || snfSaving() || !canEd()"
+                                [title]="r.HALLS === 1 ? 'إلغاء صفة الحساب العام للعملة' : 'تعيين العملة كحساب عام'">
+                          <i class="pi pi-flag" [class.active]="r.HALLS === 1"></i>
+                        </button>
+                        <button type="button"
+                                class="snf-del-btn"
+                                (click)="removeSnfRow(r)"
+                                [disabled]="!selected() || snfSaving() || !canEd()"
+                                title="حذف العملة">
+                          <i class="pi pi-times"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                  @for (_ of [1,2,3,4].slice(snfRows().length); track $index) {
+                    <tr class="row-blank"><td>&nbsp;</td><td></td><td></td></tr>
+                  }
+                </tbody>
+              </table>
+              @if (selected() && !editable() && availableCurrencies().length > 0) {
+                <button type="button" class="snf-add-btn" (click)="openSnfModal()"
+                        [disabled]="!canEd()">
+                  <i class="pi pi-plus"></i> إضافة عملة
+                </button>
+              }
+            </div>
+          </div>
+
+          <app-legacy-toolbar
+            class="tree-toolbar"
+            [screen]="screenCode"
+            [mode]="mode()"
+            [saving]="saving()"
+            [hasCurrent]="!!selected()"
+            [actions]="['new','save','search','print','exit','cancel','edit','delete','props']"
+            [enabledRules]="{
+              new: canIns() && !editable() && !saving(),
+              save: editable() && !saving(),
+              search: !saving(),
+              print: canPr() && !editable() && !!selected(),
+              exit: !saving(),
+              cancel: editable() && !saving(),
+              edit: canEd() && !!selected() && !editable() && !saving(),
+              delete: canDe() && !!selected() && !editable() && !saving(),
+              props: !!selected() && !saving()
+            }"
+            (action)="onToolbarAction($event)" />
+        </div>
+      </div>
+
+      <!-- ══ Audit footer — 2 rows × 4 cols matching the reference ═══ -->
+      <app-legacy-audit-footer [record]="selectedRecord()" />
+
+      <!-- SNF add-currency modal (only modal kept: currency picker LOV) -->
+      @if (snfModalOpen()) {
+        <div class="lov-overlay" (click)="closeSnfModal()">
+          <div class="lov-dialog" (click)="$event.stopPropagation()">
+            <div class="lov-head">
+              <h3>إضافة عملة للحساب</h3>
+              <button type="button" title="إغلاق" (click)="closeSnfModal()"><i class="pi pi-times"></i></button>
+            </div>
+            <div class="lov-body">
+              <label>اختر العملة:</label>
+              <select class="f-input" dir="rtl" title="اختر العملة"
+                      [ngModel]="snfNewCurrency()"
+                      (ngModelChange)="snfNewCurrency.set(+$event)">
+                <option [ngValue]="0">—</option>
+                @for (c of availableCurrencies(); track c.NO) {
+                  <option [ngValue]="c.NO">{{ c.NAMEM3 }}</option>
+                }
+              </select>
+              <div class="lov-actions">
+                <button type="button" class="btn-ok" (click)="addSnfRow()"
+                        [disabled]="!snfNewCurrency() || snfSaving()">
+                  <i class="pi pi-check"></i> إضافة
+                </button>
+                <button type="button" class="btn-cancel" (click)="closeSnfModal()">إلغاء</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+      @if (propsModalOpen()) {
+        <div class="props-overlay" (click)="closePropsModal()">
+          <div class="props-dialog" (click)="$event.stopPropagation()">
+            <div class="props-head">
+              <h3>خصائص إضافية للحساب</h3>
+              <button type="button" title="إغلاق" (click)="closePropsModal()"><i class="pi pi-times"></i></button>
+            </div>
+            <div class="props-body">
+              <label class="legacy-check">
+                <input type="checkbox"
+                       [ngModel]="form().NOKYED === 1"
+                       (ngModelChange)="setField('NOKYED', $event ? 1 : 0)"
+                       [disabled]="!editable()" />
+                <span>عدم إظهار الحساب في أي مستند (NOKYED)</span>
+              </label>
+
+              @if (showOnyx()) {
+                <div class="props-row">
+                  <label>تحليلي أونكس (NOYSOFT)</label>
+                  <input type="number" class="f-input" dir="ltr"
+                         [ngModel]="form().NOYSOFT"
+                         (ngModelChange)="setField('NOYSOFT', $event === null || $event === '' ? null : +$event)"
+                         [disabled]="!editable()" />
+                </div>
+                <div class="props-row">
+                  <label>رئيسي أونكس (NOYSOFR)</label>
+                  <input type="number" class="f-input" dir="ltr"
+                         [ngModel]="form().NOYSOFR"
+                         (ngModelChange)="setField('NOYSOFR', $event === null || $event === '' ? null : +$event)"
+                         [disabled]="!editable()" />
+                </div>
+              } @else {
+                <div class="props-note">حقول أونكس تظهر للمستخدم المدير على الحسابات التفصيلية فقط.</div>
+              }
+
+              <div class="props-actions">
+                <button type="button" class="btn-ok" (click)="closePropsModal()">موافق</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+
+    </div> <!-- .tree-legacy -->
+  </div>   <!-- .legacy-dialog -->
+</div>     <!-- .legacy-desktop -->

@@ -1,0 +1,94 @@
+<div class="forms-root">
+  <div class="forms-topbar">الاوائل سوفت لأنظمة الحاسب</div>
+
+  <div class="forms-stage">
+    <div class="login-window">
+      <div class="titlebar">
+        <span class="titlebar-icon"></span>
+        <span class="titlebar-text">Al wael Accounting Management System</span>
+        <button class="titlebar-close" type="button" (click)="exit()" aria-label="close">×</button>
+      </div>
+
+      <div class="window-body">
+        <section class="form-side">
+          <div class="form-row">
+            <label>الفرع</label>
+            <select [ngModel]="unit()" (ngModelChange)="onUnitChange($event)" [disabled]="busy()">
+              @for (u of units(); track u.NU) {
+                <option [value]="u.NU">{{ u.NA }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label>السنة المالية</label>
+            <input type="text" [value]="year()" readonly />
+          </div>
+
+          <div class="form-row">
+            <label>اسم المستخدم</label>
+          <select
+            [ngModel]="userId()"
+            (ngModelChange)="setUserId($event)"
+            [disabled]="busy() || !users().length"
+          >
+              @for (u of users(); track u.nou) {
+                <option [value]="u.nou">{{ u.name }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-row">
+            <label>كلمة المرور</label>
+            <input
+              type="password"
+              [ngModel]="password()"
+              (ngModelChange)="password.set($event)"
+              (keydown.enter)="login()"
+              autocomplete="off"
+              [disabled]="busy()"
+            />
+          </div>
+
+          <div class="form-row">
+            <label>الدخول إلى سنة</label>
+            <select [ngModel]="entryYear()" (ngModelChange)="onYearChange($event)" [disabled]="busy()">
+              @for (y of yearOptions(); track y) {
+                <option [value]="y">{{ y }}</option>
+              }
+            </select>
+          </div>
+
+          @if (error()) {
+            <div class="error-line">{{ error() }}</div>
+          }
+
+          <div class="actions">
+            <button class="icon-btn red" type="button" title="خروج" (click)="exit()" [disabled]="busy()">
+              ⦿
+            </button>
+            <button class="icon-btn green" type="button" title="دخول" (click)="login()" [disabled]="busy()">
+              ▲
+            </button>
+          </div>
+        </section>
+
+        <aside class="brand-side">
+          <div class="brand-logo">WS</div>
+          <div class="brand-strip">business &amp; computers</div>
+          <div class="version-wrap">
+            <span class="version-left"></span>
+            <span class="version">17</span>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </div>
+
+  <div class="forms-statusbar">
+    <div class="status-cell">Record: 1/1</div>
+    <div class="status-cell"></div>
+    <div class="status-cell"></div>
+    <div class="status-cell"></div>
+  </div>
+</div>

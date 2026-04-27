@@ -1,0 +1,263 @@
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
+.memo-root {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #a9c8e6;
+  color: #001b37;
+  font: 12px Tahoma, Arial, sans-serif;
+}
+
+.memo-toolbar-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.memo-toolbar-tools button,
+.memo-toolbar-tools select,
+.memo-toolbar-tools input {
+  height: 23px;
+  border: 1px solid #748ba1;
+  background: #eef3f8;
+  color: #082f55;
+  font: 12px Tahoma, Arial, sans-serif;
+}
+
+.memo-toolbar-tools button {
+  min-width: 25px;
+  background: linear-gradient(#ffffff, #dbeaf7);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.memo-toolbar-tools button:disabled,
+.memo-toolbar-tools select:disabled {
+  opacity: .55;
+  cursor: default;
+}
+
+.memo-layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 4px;
+  padding: 4px;
+}
+
+.memo-list,
+.legacy-window {
+  border: 1px solid #7896b1;
+  background: #b5d2ea;
+}
+
+.memo-list {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-title,
+.window-title {
+  min-height: 25px;
+  padding: 5px 8px;
+  border-bottom: 1px solid #7896b1;
+  background: linear-gradient(#cbe2f5, #9fc2df);
+  color: #002a54;
+  font-weight: 700;
+  text-align: center;
+}
+
+.memo-list-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px;
+}
+
+.memo-card {
+  width: 100%;
+  border: 1px solid #819ab2;
+  background: #e6edf3;
+  color: #092f55;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 6px;
+  margin-bottom: 4px;
+  padding: 5px;
+  text-align: right;
+  cursor: pointer;
+  font: 12px Tahoma, Arial, sans-serif;
+}
+
+.memo-card.active,
+.memo-card:hover {
+  border-color: #006ab6;
+  background: #d2e8fa;
+}
+
+.memo-date {
+  font-weight: 700;
+  color: #003f73;
+}
+
+.memo-repeat,
+.memo-user {
+  color: #4a5c70;
+  font-size: 11px;
+}
+
+.memo-text {
+  grid-column: 1 / -1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.memo-work {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.form-grid {
+  padding: 9px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+label {
+  display: grid;
+  gap: 3px;
+  color: #001b37;
+  font-weight: 700;
+}
+
+input,
+select,
+textarea {
+  border: 1px solid #7b91a5;
+  background: #edf1f4;
+  color: #111827;
+  padding: 3px 5px;
+  font: 12px Tahoma, Arial, sans-serif;
+}
+
+input,
+select {
+  height: 25px;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 150px;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  background: #dce3e9;
+  color: #24384d;
+}
+
+.memo-textarea {
+  grid-column: 1 / -1;
+}
+
+.help-window { display: none; }
+
+.legacy-help {
+  padding: 8px;
+  display: grid;
+  gap: 5px;
+  color: #14334f;
+}
+
+.empty {
+  padding: 14px;
+  text-align: center;
+  color: #5b6977;
+}
+
+@media (max-width: 900px) {
+  .memo-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .memo-list {
+    max-height: 190px;
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+}
+
+
+/* Legacy MDI window extracted from Oracle Forms chrome. */
+.memo-root {
+  
+  left: 303px !important;
+  top: 154px !important;
+  
+  width: 760px !important;
+  height: 460px !important;
+  min-height: 0 !important;
+  box-sizing: border-box;
+  overflow: hidden !important;
+  background: #a9c8e6 !important;
+  border: 1px solid #6f8294;
+  box-shadow: 1px 1px 0 #ffffff inset, -1px -1px 0 #7f9cb6 inset;
+  
+}
+
+.memo-titlebar {
+  height: 29px;
+  min-height: 29px;
+  box-sizing: border-box;
+  border: 1px solid #7aa3c7;
+  border-bottom-color: #5f86a7;
+  background: linear-gradient(#d4e8f8, #A8C8E6);
+  display: flex;
+  align-items: center;
+  direction: ltr;
+  padding: 2px 5px;
+}
+
+.memo-titlebar .window-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  background: url('/legacy-icons/w.ico') center / contain no-repeat;
+}
+
+.memo-titlebar h2 {
+  flex: 1;
+  margin: 0;
+  color: #536170;
+  font: 400 12px Tahoma, Arial, sans-serif;
+  text-align: right;
+  direction: rtl;
+}
+
+.memo-titlebar .window-close {
+  width: 30px;
+  height: 21px;
+  border: 1px solid #8094a9;
+  border-radius: 2px;
+  background: linear-gradient(#f5fbff, #bdd3e4);
+  color: #3c4e5f;
+  font: 700 14px Arial, sans-serif;
+  line-height: 16px;
+  padding: 0;
+  cursor: pointer;
+}

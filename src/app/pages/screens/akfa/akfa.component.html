@@ -1,0 +1,324 @@
+<div class="akfa-root" dir="rtl">
+  <div class="akfa-titlebar" dir="ltr">
+    <span class="akfa-window-icon" aria-hidden="true"></span>
+    <span class="akfa-window-title">قيد إقفال فوارق العملة</span>
+    <button type="button" class="akfa-window-close" title="إغلاق" (click)="onExit()">×</button>
+  </div>
+
+  <!-- ══ TOOLBAR ═════════════════════════════════════════════ -->
+  <app-action-toolbar
+    [screen]="screenCode"
+    [mode]="mode()"
+    [saving]="saving()"
+    [posted]="false"
+    [hasCurrent]="!!master().NOS"
+    title="قيد إقفال فوارق العملة"
+    icon="pi-sync"
+    [countBadge]="rows().length + ' قيد'"
+    [actions]="['new','edit','delete','save','cancel','refresh']"
+    (action)="onToolbarAction($event)">
+
+    @if (master().NOS && rows().length > 1) {
+      <div class="tb-nav">
+        <button class="nav-btn" (click)="navTo('first')" [disabled]="currentIdx()<=0" title="الأول">
+          <i class="pi pi-step-backward"></i>
+        </button>
+        <button class="nav-btn" (click)="navTo(-1)" [disabled]="currentIdx()<=0" title="السابق">
+          <i class="pi pi-caret-right"></i>
+        </button>
+        <span class="nav-pos">{{ currentIdx()+1 }} / {{ rows().length }}</span>
+        <button class="nav-btn" (click)="navTo(1)" [disabled]="currentIdx()>=rows().length-1" title="التالي">
+          <i class="pi pi-caret-left"></i>
+        </button>
+        <button class="nav-btn" (click)="navTo('last')" [disabled]="currentIdx()>=rows().length-1" title="الأخير">
+          <i class="pi pi-step-forward"></i>
+        </button>
+      </div>
+    }
+
+    <div class="tb-search">
+      <i class="pi pi-search"></i>
+      <input type="search" placeholder="بحث برقم القيد، المسلسل، التاريخ..."
+             [ngModel]="search()" (ngModelChange)="search.set($event)" />
+    </div>
+  </app-action-toolbar>
+
+  <!-- ══ STATUS STRIP ════════════════════════════════════════ -->
+  <div class="akfa-status">
+    <app-status-strip
+      [error]="err()"
+      [info]="info()"
+      [badges]="statusBadges()"
+      (dismiss)="clearMessages()" />
+  </div>
+
+  <!-- ══ BODY ════════════════════════════════════════════════ -->
+  <div class="akfa-body">
+
+    <!-- Clearing-account banner -->
+    @if (!clearingNoa()) {
+      <div class="warn-banner">
+        <i class="pi pi-exclamation-triangle"></i>
+        <strong>تحذير:</strong>
+        لم يتم ضبط حساب فروقات العملة في دليل الحسابات (THSYSTEM=1). لن تعمل الإقفال حتى تحدده من شاشة DATA_AC.
+      </div>
+    }
+
+    @if (master().NOS || editable()) {
+      <div class="akfa-form">
+
+        <!-- ── HEADER ─────────────────────────────────────── -->
+        <div class="akfa-header">
+          <div class="hdr-field">
+            <label>مسلسل
+              <small class="hdr-hint" title="أدخل رقماً وضغط Enter للقفز إلى قيد آخر">⌕</small>
+            </label>
+            @if (editable()) {
+              <input class="hdr-input hdr-ro" [value]="master().NOSON || '(تلقائي)'" disabled />
+            } @else {
+              <input type="number" class="hdr-input" [value]="master().NOSON ?? ''"
+                     placeholder="رقم السنة" #nosonInput
+                     (keyup.enter)="jumpByNoson(+nosonInput.value)"
+                     title="أدخل رقم مسلسل السنة واضغط Enter" />
+            }
+          </div>
+          <div class="hdr-field">
+            <label>التاريخ</label>
+            <input type="date" class="hdr-input"
+                   [ngModel]="master().DATES ? (asStr(master().DATES) | date:'yyyy-MM-dd') : ''"
+                   (ngModelChange)="patchMaster({ DATES: $event })"
+                   [disabled]="!editable()" />
+          </div>
+          <div class="hdr-field">
+            <label>رقم القيد (NOK)</label>
+            <input class="hdr-input hdr-ro" [value]="master().NOK || '(عند الحفظ)'" disabled />
+          </div>
+          <div class="hdr-field hdr-field-wide">
+            <label>حساب فروقات العملة (المقابل)</label>
+            <div class="hdr-clearing">
+              @if (clearingNoa()) {
+                <strong>{{ clearingNoa() }}</strong>
+                <span> · </span>
+                <span>{{ clearingName() || '—' }}</span>
+              } @else {
+                <span class="clearing-missing">غير محدد</span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- ── FETCH-CANDIDATES BAR ──────────────────────────── -->
+        @if (editable()) {
+          <div class="fetch-bar">
+            <button class="btn-fetch" (click)="fetchCandidates()"
+                    [disabled]="fetching() || !master().DATES || !clearingNoa()">
+              <i class="pi" [class.pi-refresh]="!fetching()"
+                          [class.pi-spin]="fetching()"
+                          [class.pi-spinner]="fetching()"></i>
+              {{ fetching() ? 'جاري الجلب...' : 'جلب أرصدة العملات الأجنبية' }}
+            </button>
+            <span class="fetch-hint">
+              <i class="pi pi-info-circle"></i>
+              عند اختيار التاريخ، اضغط الزر لعرض جميع الحسابات بأرصدة عملة أجنبية غير صفرية. راجع أسعار الصرف وحدد الحسابات المطلوب إقفالها.
+            </span>
+          </div>
+        }
+
+        <!-- ── DETAILS TABLE ────────────────────────────────── -->
+        <div class="akfa-details">
+          <div class="det-header">
+            <span>
+              <i class="pi pi-list"></i>
+              حسابات الإقفال
+              <span class="det-count">({{ activeRows().length }} / {{ details().length }})</span>
+            </span>
+            @if (editable() && details().length > 0) {
+              <div class="det-actions">
+                <button class="btn-link" (click)="toggleAll(true)" title="تحديد الكل">
+                  <i class="pi pi-check-square"></i> تحديد الكل
+                </button>
+                <button class="btn-link" (click)="toggleAll(false)" title="إلغاء الكل">
+                  <i class="pi pi-times-circle"></i> إلغاء الكل
+                </button>
+              </div>
+            }
+          </div>
+
+          <div class="det-table-wrap">
+            <table class="det-table">
+              <thead>
+                <tr>
+                  <th class="col-ty">✓</th>
+                  <th class="col-noa">الحساب</th>
+                  <th class="col-noa">الاسم</th>
+                  <th class="col-noaml">العملة</th>
+                  <th class="col-num">الرصيد (أجنبي)</th>
+                  <th class="col-num">رصيد الدفاتر (محلي)</th>
+                  <th class="col-sars">سعر الصرف</th>
+                  <th class="col-num">القيمة المعاد تقييمها</th>
+                  <th class="col-num col-fark">الفارق</th>
+                  <th class="col-amount">مدين</th>
+                  <th class="col-amount">دائن</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (row of details(); track trackByNoa($index, row); let i = $index) {
+                  <tr [class.row-active]="row.TY===1"
+                      [class.row-zero]="isZeroFark(row.FARK)">
+                    <td class="col-ty">
+                      <input type="checkbox"
+                             [checked]="row.TY === 1"
+                             (change)="toggleRow(i)"
+                             [disabled]="!editable() || isZeroFark(row.FARK)"
+                             [title]="isZeroFark(row.FARK) ? 'لا يوجد فارق' : 'تحديد للإقفال'" />
+                    </td>
+                    <td class="col-mono">{{ row.NOA }}</td>
+                    <td class="col-name" [title]="row.NAMEA">{{ row.NAMEA }}</td>
+                    <td class="col-mono">
+                      {{ row.NOAML_NAME || row.NOAML }}
+                    </td>
+                    <td class="col-num">{{ row.RSEDHA | number:'1.2-2' }}</td>
+                    <td class="col-num">{{ row.RSEDHY | number:'1.2-2' }}</td>
+                    <td class="col-sars">
+                      @if (editable() && row.TY === 1) {
+                        <input type="number" step="0.0001" min="0"
+                               class="sars-input"
+                               [class.sars-overridden]="isRateOverridden(row)"
+                               [ngModel]="row.SARSF"
+                               (ngModelChange)="onRateChange(i, $event)" />
+                      } @else {
+                        <span [class.sars-overridden]="isRateOverridden(row)">
+                          {{ row.SARSF | number:'1.2-4' }}
+                        </span>
+                      }
+                    </td>
+                    <td class="col-num">{{ row.RSEDHYB | number:'1.2-2' }}</td>
+                    <td class="col-num col-fark"
+                        [class.fark-positive]="row.FARK > 0.005"
+                        [class.fark-negative]="row.FARK < -0.005">
+                      {{ row.FARK | number:'1.2-2' }}
+                    </td>
+                    <td class="col-num col-mdin">
+                      @if (row.MDIN > 0) { {{ row.MDIN | number:'1.2-2' }} }
+                    </td>
+                    <td class="col-num col-dan">
+                      @if (row.DAN > 0) { {{ row.DAN | number:'1.2-2' }} }
+                    </td>
+                  </tr>
+
+                  @if (row.TY === 1) {
+                    <tr class="row-memos">
+                      <td></td>
+                      <td colspan="5">
+                        <label class="memo-label">بيان الحساب:</label>
+                        <input class="memo-input"
+                               [ngModel]="row.MEMOS"
+                               (ngModelChange)="onMemoChange(i, 'MEMOS', $event)"
+                               [disabled]="!editable()"
+                               maxlength="400" />
+                      </td>
+                      <td colspan="5">
+                        <label class="memo-label">بيان المقابل:</label>
+                        <input class="memo-input"
+                               [ngModel]="row.MEMOS2"
+                               (ngModelChange)="onMemoChange(i, 'MEMOS2', $event)"
+                               [disabled]="!editable()"
+                               maxlength="400" />
+                      </td>
+                    </tr>
+                  }
+                }
+
+                @if (!details().length) {
+                  <tr>
+                    <td colspan="11" class="empty-cell">
+                      @if (editable()) {
+                        <div class="empty-inner">
+                          <i class="pi pi-inbox"></i>
+                          <p>اضغط "جلب أرصدة العملات الأجنبية" لعرض الحسابات</p>
+                        </div>
+                      } @else {
+                        <div class="empty-inner">
+                          <i class="pi pi-info-circle"></i>
+                          <p>لا توجد سطور في هذا القيد</p>
+                        </div>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+              @if (activeRows().length > 0) {
+                <tfoot>
+                  <tr class="totals-row">
+                    <td colspan="9" class="totals-label">الإجمالي</td>
+                    <td class="col-num col-mdin"><strong>{{ totalMdin() | number:'1.2-2' }}</strong></td>
+                    <td class="col-num col-dan"><strong>{{ totalDan() | number:'1.2-2' }}</strong></td>
+                  </tr>
+                  <tr class="net-row">
+                    <td colspan="9" class="totals-label">صافي فارق التقييم</td>
+                    <td class="col-num" colspan="2"
+                        [class.fark-positive]="netFark() > 0.005"
+                        [class.fark-negative]="netFark() < -0.005">
+                      <strong>{{ netFark() | number:'1.2-2' }}</strong>
+                      @if (netFark() > 0.005) { <span class="net-tag">ربح فارق عملة</span> }
+                      @else if (netFark() < -0.005) { <span class="net-tag">خسارة فارق عملة</span> }
+                    </td>
+                  </tr>
+                </tfoot>
+              }
+            </table>
+          </div>
+        </div>
+
+        <!-- ── AUDIT ─────────────────────────────────────────── -->
+        @if (master().NOS) {
+          <app-audit-card [record]="masterAsRecord()" />
+        }
+
+      </div>
+    }
+
+    <!-- Empty state -->
+    @if (!master().NOS && !editable() && !loading()) {
+      <div class="empty-state">
+        <i class="pi pi-sync empty-icon"></i>
+        <p>اختر قيداً من القائمة أو اضغط <strong>جديد</strong> لإنشاء قيد إقفال فوارق عملة</p>
+      </div>
+    }
+    @if (loading()) {
+      <div class="empty-state"><i class="pi pi-spin pi-spinner loading-spinner"></i></div>
+    }
+
+    <!-- ── LIST ──────────────────────────────────────────── -->
+    <div class="vouchers-panel">
+      <div class="vp-header">
+        <span><i class="pi pi-list"></i> قائمة قيود الإقفال</span>
+        <span class="vp-count">{{ filtered().length }} / {{ rows().length }}</span>
+      </div>
+      <div class="vp-body">
+        <table class="vp-tbl">
+          <thead>
+            <tr>
+              <th>مسلسل</th>
+              <th>التاريخ</th>
+              <th>رقم القيد</th>
+              <th>عدد الحسابات</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of filtered(); track r.NOS) {
+              <tr (click)="openRow(r.NOS)" [class.vp-row-active]="r.NOS===master().NOS">
+                <td class="td-mono">{{ r.NOSON || r.NOS }}</td>
+                <td>{{ asStr(r.DATES) | date:'dd/MM/yyyy' }}</td>
+                <td class="td-mono">{{ r.NOK }}</td>
+                <td class="td-mono td-num">{{ r.LINES }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+</div>

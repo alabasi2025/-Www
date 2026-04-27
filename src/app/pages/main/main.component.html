@@ -1,0 +1,134 @@
+﻿<div class="trmenu-shell" [class.legacy-window-mode]="isLegacyMdiScreen()">
+  @if (isLegacyMdiScreen()) {
+    <div class="legacy-os-titlebar">
+      <div class="legacy-os-title">
+        <span class="legacy-os-icon"></span>
+        <span>الأوائل سوفت لأنظمة الحاسب / محطة معبر</span>
+      </div>
+      <div class="legacy-os-controls">
+        <span>−</span>
+        <span>□</span>
+        <span>×</span>
+        <small>Window</small>
+      </div>
+    </div>
+  }
+  <div class="message-line">لا اله الا انت سبحانك اني كنت من الضالمين</div>
+  <div class="title-line">النظام المحاسبي الشامل</div>
+
+  <div class="workspace"
+       [class.screen-mode]="isScreenView() && !isLegacyMdiScreen()"
+       [class.legacy-mdi-mode]="isLegacyMdiScreen()">
+    @if (!isScreenView() || isLegacyMdiScreen()) {
+      <aside class="info-panel">
+        <div class="logo-box">
+          <div class="ws-logo">WS</div>
+          <div class="oracle-strip">ORACLE</div>
+        </div>
+
+        <div class="meta-block">
+          <div class="meta-title">التاريخ</div>
+          <div class="meta-value">{{ todayDate }}</div>
+          <div class="meta-title">اليوم</div>
+          <div class="meta-value">{{ dayNameAr }}</div>
+          <div class="meta-title">المستخدم</div>
+          <div class="meta-value">{{ userName }}</div>
+          <div class="meta-title">الجهاز</div>
+          <div class="meta-value">{{ machineName }}</div>
+          <div class="meta-title">السنة المالية</div>
+          <div class="meta-value">{{ currentYear }}</div>
+        </div>
+
+        <div class="company-box">
+          <div class="meta-title">مصرح لشركة</div>
+          <div class="meta-value">{{ companyName }}</div>
+        </div>
+      </aside>
+    }
+
+    <section class="center-panel"
+             [class.screen-mode]="isScreenView() && !isLegacyMdiScreen()"
+             [class.legacy-mdi-center]="isLegacyMdiScreen()">
+      <router-outlet />
+    </section>
+
+    @if (!isScreenView() || isLegacyMdiScreen()) {
+      <aside class="tree-panel">
+        <div class="tool-row">
+          @for (icon of toolbarIcons; track icon) {
+            <button class="tool-btn" type="button" aria-label="tool">
+              <i class="pi" [class]="icon"></i>
+            </button>
+          }
+          <button class="tool-btn danger" type="button" (click)="logout()" aria-label="logout">
+            <i class="pi pi-sign-out"></i>
+          </button>
+        </div>
+
+        <div class="system-row">
+          <label class="system-title" for="legacy-subsystem-select">الأنظمة الفرعية</label>
+          <select
+            id="legacy-subsystem-select"
+            aria-label="الأنظمة الفرعية"
+            [ngModel]="tsys()"
+            (ngModelChange)="loadScreens(+$event || 1)"
+            [disabled]="loading()"
+          >
+            @for (system of systems(); track system.tsys) {
+              <option [ngValue]="system.tsys">
+                {{ system.tsys }} - {{ system.label }}
+              </option>
+            }
+          </select>
+          <span>{{ menuScreens() || currentSystem().screenRows }} شاشة / {{ menuTotal() || currentSystem().totalRows }} عنصر</span>
+        </div>
+
+        <div class="search-row">
+          <input
+            type="search"
+            [ngModel]="search()"
+            (ngModelChange)="search.set($event)"
+            placeholder=""
+          />
+          <span>بحث</span>
+        </div>
+
+        <div class="tree-body">
+          @if (loading()) {
+            <div class="loading">جاري التحميل...</div>
+          } @else {
+            @for (item of visibleNodes(); track item.node.noa) {
+              <div
+                class="tree-row"
+                [class.active]="isActive(item.node)"
+                [style.paddingRight.px]="6 + item.depth * 16"
+              >
+                <button
+                  class="expand-btn"
+                  type="button"
+                  (click)="toggleNode(item.node)"
+                  [disabled]="!item.hasChildren"
+                  [attr.aria-label]="item.hasChildren ? 'toggle' : 'leaf'"
+                >
+                  <i
+                    class="pi"
+                    [class.pi-plus-square]="item.hasChildren && !isExpanded(item.node)"
+                    [class.pi-minus-square]="item.hasChildren && isExpanded(item.node)"
+                    [class.pi-stop]="!item.hasChildren"
+                  ></i>
+                </button>
+
+                <i class="node-icon" [class]="getNodeIcon(item.node, item.hasChildren)"></i>
+
+                <button class="node-label" type="button" (click)="onNodeClick(item.node)">
+                  {{ item.node.namea }}
+                </button>
+              </div>
+            }
+          }
+        </div>
+      </aside>
+    }
+  </div>
+</div>
+

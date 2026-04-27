@@ -1,0 +1,21 @@
+<div class="m-mb-legacy" dir="rtl">
+  <app-legacy-status-bar [error]="err()" [info]="info()" (dismiss)="clearMessages()" />
+  <app-legacy-toolbar screen="M_MB" [mode]="mode()" [saving]="saving()" [posted]="posted()"
+    [hasCurrent]="!!masterRaw()['NOS']" title="بيانات مندوبي المبيعات"
+    [countBadge]="rows().length + ' سجل'"
+    [actions]="['exit','new','edit','delete','save','cancel','refresh']"
+    [enabledRules]="{exit:!saving(),new:!saving()&&!editable(),edit:!!masterRaw()['NOS']&&!saving()&&!editable()&&!posted(),delete:!!masterRaw()['NOS']&&!saving()&&!editable()&&!posted(),save:!saving()&&editable(),cancel:editable()&&!saving(),refresh:!saving()}"
+    (action)="onToolbarAction($event)">
+    <div class="legacy-toolbar-nav"><span class="legacy-rec">Record: {{ currentIdx()+1 }}/{{ rows().length||1 }}</span></div>
+  </app-legacy-toolbar>
+  <div class="legacy-frame">
+    <div class="legacy-panel" style="padding:8px">
+      <div class="legacy-field"><label>التاريخ</label><input type="date" [ngModel]="model().DATES" (ngModelChange)="model.update(v=>({...v,DATES:$event}))" [disabled]="!editable()" /></div>
+      <div class="legacy-field"><label>الحساب</label><input type="number" [value]="model().NOA||''" disabled style="width:80px" /><input [value]="model().NAMES||''" disabled /></div>
+      <div class="legacy-field"><label>البيان</label><input [ngModel]="model().MEMOS1" (ngModelChange)="model.update(v=>({...v,MEMOS1:$event}))" [disabled]="!editable()" /></div>
+      <div class="legacy-field"><label>رقم القيد</label><input [value]="masterRaw()['NOK']||''" disabled /></div>
+      <div class="legacy-status-box" [class.posted]="posted()">{{ posted() ? 'مُرحّل' : 'غير مُرحّل' }}</div>
+    </div>
+    @if (masterRaw()['NOS']) { <app-legacy-audit-footer class="legacy-audit" [record]="masterRecord()" /> }
+  </div>
+</div>

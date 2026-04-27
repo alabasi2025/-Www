@@ -1,0 +1,618 @@
+<div class="sn-root" dir="rtl">
+
+  <!-- ══ TOOLBAR ═════════════════════════════════════════════ -->
+  <app-action-toolbar
+    [screen]="screenCode"
+    [mode]="mode()"
+    [saving]="saving()"
+    [hasCurrent]="hasCurrent()"
+    title="بيانات الأصناف"
+    icon="pi-box"
+    [countBadge]="filtered().length + ' صنف'"
+    [actions]="['new','edit','delete','save','cancel','refresh']"
+    (action)="onToolbarAction($event)">
+
+    <div class="tb-tools">
+      <div class="tb-search">
+        <i class="pi pi-search"></i>
+        <input type="search" placeholder="بحث بالاسم، الرقم، الاختصار، الباركود..."
+               [ngModel]="search()" (ngModelChange)="search.set($event)" />
+      </div>
+
+      <select class="tb-select" [ngModel]="groupFilter()"
+              (ngModelChange)="groupFilter.set(+$event)">
+        <option [ngValue]="0">— كل المجموعات —</option>
+        @for (g of groups(); track trackByNode($index, g)) {
+          <option [ngValue]="g.NOA">{{ g.NOA }} — {{ g.NAMEA }}</option>
+        }
+      </select>
+    </div>
+  </app-action-toolbar>
+
+  <!-- ══ STATUS STRIP ═══════════════════════════════════════ -->
+  <div class="sn-status">
+    <app-status-strip
+      [error]="err()"
+      [info]="info()"
+      [badges]="statusBadges()"
+      (dismiss)="clearMessages()" />
+  </div>
+
+  <!-- ══ BODY — LEFT LIST + RIGHT FORM ══════════════════════ -->
+  <div class="sn-body">
+
+    <!-- ── LIST ────────────────────────────────────────── -->
+    <div class="sn-list">
+      <table class="list-table">
+        <thead>
+          <tr>
+            <th style="width:5.5rem">الرقم</th>
+            <th>الاسم</th>
+            <th style="width:3.5rem">المجموعة</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading()) {
+            <tr><td colspan="3" class="loading-cell">
+              <i class="pi pi-spin pi-spinner"></i> جاري التحميل...
+            </td></tr>
+          }
+          @for (r of filtered(); track trackByNoa($index, r)) {
+            <tr (click)="openRow(r.NOA)"
+                [class.row-active]="r.NOA === selected()">
+              <td class="td-mono">{{ r.NOA }}</td>
+              <td>
+                {{ r.NAMEA || '—' }}
+                @if (r.AHSAR) { <small class="td-tag">{{ r.AHSAR }}</small> }
+              </td>
+              <td class="td-mono">{{ r.TYPEA }}</td>
+            </tr>
+          }
+          @if (!loading() && filtered().length === 0) {
+            <tr><td colspan="3" class="empty-cell">
+              <i class="pi pi-inbox"></i>
+              <span>لا توجد أصناف</span>
+            </td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- ── FORM ────────────────────────────────────────── -->
+    <div class="sn-form">
+
+      @if (!hasCurrent() && !editable()) {
+        <div class="form-empty">
+          <i class="pi pi-box"></i>
+          <h3>بيانات الأصناف</h3>
+          <p>اختر صنفاً من القائمة لعرض تفاصيله، أو اضغط
+             <strong>"جديد"</strong> لإضافة صنف.</p>
+        </div>
+      } @else {
+
+        <!-- ── TABS NAV ──────────────────────────────── -->
+        <nav class="tabs">
+          <button type="button" [class.active]="activeTab()==='basic'"      (click)="setTab('basic')">
+            <i class="pi pi-id-card"></i> أساسي
+          </button>
+          <button type="button" [class.active]="activeTab()==='dimensions'" (click)="setTab('dimensions')">
+            <i class="pi pi-sliders-h"></i> أبعاد ووحدات
+          </button>
+          <button type="button" [class.active]="activeTab()==='pricing'"    (click)="setTab('pricing')">
+            <i class="pi pi-dollar"></i> تسعير وجرد
+          </button>
+          <button type="button" [class.active]="activeTab()==='flags'"      (click)="setTab('flags')">
+            <i class="pi pi-flag"></i> خصائص
+          </button>
+          <button type="button" [class.active]="activeTab()==='accounting'" (click)="setTab('accounting')">
+            <i class="pi pi-calculator"></i> محاسبي
+          </button>
+        </nav>
+
+        <!-- ══ TAB: BASIC ═══════════════════════════════════ -->
+        @if (activeTab() === 'basic') {
+          <div class="form-section">
+            <div class="form-grid">
+
+              <div class="f-field">
+                <label>رقم الصنف (NOA)</label>
+                <input type="number" class="f-input f-input-num"
+                       [ngModel]="form().NOA"
+                       placeholder="يُولَّد تلقائياً"
+                       disabled />
+                <small class="f-hint">يُبنى من: مجموعة + تسلسل</small>
+              </div>
+
+              <div class="f-field">
+                <label>تسلسلي داخل المجموعة (NOAN)</label>
+                <input type="number" class="f-input f-input-num"
+                       [ngModel]="form().NOAN"
+                       (ngModelChange)="updateField('NOAN', $event ? +$event : null)"
+                       [disabled]="mode() !== 'new'" />
+                @if (mode() === 'new') {
+                  <small class="f-hint">اتركه فارغاً لاستخدام ‎+10‎ تلقائياً</small>
+                }
+              </div>
+
+              <div class="f-field f-field-wide">
+                <label>المجموعة (TYPEA) <span class="req">*</span></label>
+                <div class="f-lov">
+                  <input type="number" class="f-input f-input-num"
+                         [ngModel]="form().TYPEA"
+                         (ngModelChange)="updateField('TYPEA', $event ? +$event : null)"
+                         [disabled]="disabled() || mode() === 'edit'" />
+                  <input type="text" class="f-input"
+                         [ngModel]="form().TYPEA_NAME"
+                         placeholder="— اختر من الشجرة —"
+                         disabled />
+                  <button type="button" class="f-lov-btn"
+                          [disabled]="disabled() || mode() === 'edit'"
+                          (click)="openGroupLov()"
+                          title="اختيار المجموعة">
+                    <i class="pi pi-search"></i>
+                  </button>
+                </div>
+                @if (mode() === 'edit') {
+                  <small class="f-hint"><i class="pi pi-lock"></i> لا يمكن تغيير المجموعة بعد الإنشاء</small>
+                }
+              </div>
+
+              <div class="f-field f-field-wide">
+                <label>اسم الصنف (NAMEA) <span class="req">*</span></label>
+                <input type="text" class="f-input" maxlength="120"
+                       [ngModel]="form().NAMEA"
+                       (ngModelChange)="updateField('NAMEA', $event)"
+                       [disabled]="disabled()" />
+              </div>
+
+              <div class="f-field f-field-wide">
+                <label>اسم بديل 2 (NAMEA2)</label>
+                <input type="text" class="f-input" maxlength="120"
+                       [ngModel]="form().NAMEA2"
+                       (ngModelChange)="updateField('NAMEA2', $event)"
+                       [disabled]="disabled()" />
+              </div>
+
+              <div class="f-field f-field-wide">
+                <label>اسم بديل 3 (NAMEA3)</label>
+                <input type="text" class="f-input" maxlength="120"
+                       [ngModel]="form().NAMEA3"
+                       (ngModelChange)="updateField('NAMEA3', $event)"
+                       [disabled]="disabled()" />
+              </div>
+
+              <div class="f-field">
+                <label>اختصار (AHSAR)</label>
+                <input type="text" class="f-input" maxlength="20"
+                       [ngModel]="form().AHSAR"
+                       (ngModelChange)="updateField('AHSAR', $event)"
+                       [disabled]="disabled()" />
+              </div>
+
+              <div class="f-field">
+                <label>الباركود (NOPARCOD)</label>
+                <input type="text" class="f-input f-input-num" maxlength="30"
+                       [ngModel]="form().NOPARCOD"
+                       (ngModelChange)="updateField('NOPARCOD', $event)"
+                       [disabled]="disabled()" />
+              </div>
+
+              <div class="f-field">
+                <label>رقم النظام (NOASYS)</label>
+                <input type="number" class="f-input f-input-num"
+                       [ngModel]="form().NOASYS"
+                       (ngModelChange)="updateField('NOASYS', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+
+              <div class="f-field">
+                <label>العملة الافتراضية (AMLHH)</label>
+                <input type="number" class="f-input f-input-num"
+                       [ngModel]="form().AMLHH"
+                       (ngModelChange)="updateField('AMLHH', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+
+              <div class="f-field f-field-wide">
+                <label>وصف إضافي (NAMEB)</label>
+                <textarea class="f-input" rows="2" maxlength="500"
+                          [ngModel]="form().NAMEB"
+                          (ngModelChange)="updateField('NAMEB', $event)"
+                          [disabled]="disabled()"></textarea>
+              </div>
+
+            </div>
+          </div>
+        }
+
+        <!-- ══ TAB: DIMENSIONS ══════════════════════════════ -->
+        @if (activeTab() === 'dimensions') {
+          <div class="form-section">
+            <div class="dim-intro">
+              <i class="pi pi-info-circle"></i>
+              الأبعاد الخمسة (A1..A5) تُستخدم لتعريف وحدات القياس / الأبعاد / الألوان.
+              إذا كان أحد أبعاد X3/X4/X5 > 0 فهذا صنف بأبعاد محسوبة ولا يقبل الكسور.
+            </div>
+
+            <div class="dim-grid">
+              <div class="dim-row dim-header">
+                <span>#</span>
+                <span>الوصف (A)</span>
+                <span>قيمة (N)</span>
+                <span>معامل (X)</span>
+              </div>
+
+              <div class="dim-row">
+                <span>1</span>
+                <input type="text"   class="f-input"
+                       [ngModel]="form().A1" (ngModelChange)="updateField('A1', $event)"
+                       [disabled]="disabled()" />
+                <input type="number" class="f-input f-input-num"
+                       [ngModel]="form().N1"
+                       (ngModelChange)="updateField('N1', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+                <span class="dim-na">—</span>
+              </div>
+
+              <div class="dim-row">
+                <span>2</span>
+                <input type="text"   class="f-input"
+                       [ngModel]="form().A2" (ngModelChange)="updateField('A2', $event)"
+                       [disabled]="disabled()" />
+                <input type="number" class="f-input f-input-num"
+                       [ngModel]="form().N2"
+                       (ngModelChange)="updateField('N2', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+                <input type="number" class="f-input f-input-num"
+                       [ngModel]="form().X2"
+                       (ngModelChange)="updateField('X2', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+
+              <div class="dim-row">
+                <span>3</span>
+                <input type="text"   class="f-input"
+                       [ngModel]="form().A3" (ngModelChange)="updateField('A3', $event)"
+                       [disabled]="disabled()" />
+                <input type="number" class="f-input f-input-num"
+                       [ngModel]="form().N3"
+                       (ngModelChange)="updateField('N3', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+                <input type="number" class="f-input f-input-num"
+                       [ngModel]="form().X3"
+                       (ngModelChange)="updateField('X3', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+
+              <div class="dim-row">
+                <span>4</span>
+                <input type="text"   class="f-input"
+                       [ngModel]="form().A4" (ngModelChange)="updateField('A4', $event)"
+                       [disabled]="disabled()" />
+                <input type="number" class="f-input f-input-num"
+                       [ngModel]="form().N4"
+                       (ngModelChange)="updateField('N4', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+                <input type="number" class="f-input f-input-num"
+                       [ngModel]="form().X4"
+                       (ngModelChange)="updateField('X4', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+
+              <div class="dim-row">
+                <span>5</span>
+                <input type="text"   class="f-input"
+                       [ngModel]="form().A5" (ngModelChange)="updateField('A5', $event)"
+                       [disabled]="disabled()" />
+                <input type="number" class="f-input f-input-num"
+                       [ngModel]="form().N5"
+                       (ngModelChange)="updateField('N5', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+                <input type="number" class="f-input f-input-num"
+                       [ngModel]="form().X5"
+                       (ngModelChange)="updateField('X5', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+            </div>
+
+            <!-- KSR / WKS block -->
+            <div class="form-grid form-grid-ksr">
+              <div class="f-field">
+                <label class="f-check">
+                  <input type="checkbox"
+                         [ngModel]="form().KSR === 1"
+                         (ngModelChange)="updateField('KSR', $event ? 1 : 0)"
+                         [disabled]="disabled() || computedDimension()" />
+                  <span>يقبل كسور (KSR)</span>
+                </label>
+                @if (computedDimension()) {
+                  <small class="f-hint warn"><i class="pi pi-exclamation-circle"></i>
+                    محسوب X3/X4/X5 — لا يقبل كسور</small>
+                }
+              </div>
+
+              <div class="f-field">
+                <label>دقة الكسر (WKS)</label>
+                <input type="number" class="f-input f-input-num" min="0" max="4"
+                       [ngModel]="form().WKS"
+                       (ngModelChange)="updateField('WKS', $event ? +$event : null)"
+                       [disabled]="disabled() || form().KSR !== 1" />
+                <small class="f-hint">0-4 عدد المنازل العشرية</small>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ══ TAB: PRICING ══════════════════════════════════ -->
+        @if (activeTab() === 'pricing') {
+          <div class="form-section">
+            <h4><i class="pi pi-shopping-cart"></i> حدود البيع</h4>
+            <div class="form-grid">
+              <div class="f-field">
+                <label>حد أدنى (MINS)</label>
+                <input type="number" class="f-input f-input-num" step="0.01"
+                       [ngModel]="form().MINS"
+                       (ngModelChange)="updateField('MINS', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+              <div class="f-field">
+                <label>حد أقصى (MAXS)</label>
+                <input type="number" class="f-input f-input-num" step="0.01"
+                       [ngModel]="form().MAXS"
+                       (ngModelChange)="updateField('MAXS', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+              <div class="f-field">
+                <label>نسبة هامش (NSBR)</label>
+                <input type="number" class="f-input f-input-num" step="0.01"
+                       [ngModel]="form().NSBR"
+                       (ngModelChange)="updateField('NSBR', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+                <small class="f-hint">نسبة % للزيادة تلقائياً</small>
+              </div>
+              <div class="f-field">
+                <label>نسبة هامش جملة (NHT)</label>
+                <input type="number" class="f-input f-input-num" step="0.01"
+                       [ngModel]="form().NHT"
+                       (ngModelChange)="updateField('NHT', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+            </div>
+
+            <h4><i class="pi pi-building"></i> حدود الجملة</h4>
+            <div class="form-grid">
+              <div class="f-field">
+                <label>حد أدنى جملة (MINSG)</label>
+                <input type="number" class="f-input f-input-num" step="0.01"
+                       [ngModel]="form().MINSG"
+                       (ngModelChange)="updateField('MINSG', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+              <div class="f-field">
+                <label>حد أقصى جملة (MAXSG)</label>
+                <input type="number" class="f-input f-input-num" step="0.01"
+                       [ngModel]="form().MAXSG"
+                       (ngModelChange)="updateField('MAXSG', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+              <div class="f-field">
+                <label>نسبة هامش جملة 2 (NHG)</label>
+                <input type="number" class="f-input f-input-num" step="0.01"
+                       [ngModel]="form().NHG"
+                       (ngModelChange)="updateField('NHG', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+            </div>
+
+            <h4><i class="pi pi-box"></i> بيانات الجرد والأوزان</h4>
+            <div class="form-grid">
+              <div class="f-field">
+                <label>الوزن (WG)</label>
+                <input type="number" class="f-input f-input-num" step="0.01"
+                       [ngModel]="form().WG"
+                       (ngModelChange)="updateField('WG', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+              <div class="f-field">
+                <label>وزن الصنف (WB)</label>
+                <input type="number" class="f-input f-input-num" step="0.01"
+                       [ngModel]="form().WB"
+                       (ngModelChange)="updateField('WB', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+              <div class="f-field">
+                <label>وزن العبوة (WS)</label>
+                <input type="number" class="f-input f-input-num" step="0.01"
+                       [ngModel]="form().WS"
+                       (ngModelChange)="updateField('WS', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+              <div class="f-field">
+                <label>الحد الأعلى للمخزون (MAXB)</label>
+                <input type="number" class="f-input f-input-num"
+                       [ngModel]="form().MAXB"
+                       (ngModelChange)="updateField('MAXB', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+              <div class="f-field">
+                <label>الحد الأدنى للطلب (TLB)</label>
+                <input type="number" class="f-input f-input-num"
+                       [ngModel]="form().TLB"
+                       (ngModelChange)="updateField('TLB', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ══ TAB: FLAGS ════════════════════════════════════ -->
+        @if (activeTab() === 'flags') {
+          <div class="form-section">
+            <div class="flag-grid">
+
+              <label class="flag-chip" [class.flag-on]="form().SHD === 1">
+                <input type="checkbox"
+                       [ngModel]="form().SHD === 1"
+                       (ngModelChange)="updateField('SHD', $event ? 1 : 0)"
+                       [disabled]="disabled()" />
+                <i class="pi pi-briefcase"></i>
+                <strong>صنف خدمي (SHD)</strong>
+                <small>خدمة وليس منتج ملموس</small>
+              </label>
+
+              <label class="flag-chip" [class.flag-on]="form().DN === 1">
+                <input type="checkbox"
+                       [ngModel]="form().DN === 1"
+                       (ngModelChange)="updateField('DN', $event ? 1 : 0)"
+                       [disabled]="disabled()" />
+                <i class="pi pi-ban"></i>
+                <strong>موقوف (DN)</strong>
+                <small>لا يظهر في البيع</small>
+              </label>
+
+              <label class="flag-chip" [class.flag-on]="form().HL === 1">
+                <input type="checkbox"
+                       [ngModel]="form().HL === 1"
+                       (ngModelChange)="updateField('HL', $event ? 1 : 0)"
+                       [disabled]="disabled()" />
+                <i class="pi pi-eye-slash"></i>
+                <strong>مخفي (HL)</strong>
+                <small>مخفي من القوائم</small>
+              </label>
+
+              <label class="flag-chip" [class.flag-on]="form().HGZ === 1">
+                <input type="checkbox"
+                       [ngModel]="form().HGZ === 1"
+                       (ngModelChange)="updateField('HGZ', $event ? 1 : 0)"
+                       [disabled]="disabled()" />
+                <i class="pi pi-lock"></i>
+                <strong>مجمّد (HGZ)</strong>
+                <small>لا يقبل حركات</small>
+              </label>
+
+              <label class="flag-chip" [class.flag-on]="form().SMR === 1">
+                <input type="checkbox"
+                       [ngModel]="form().SMR === 1"
+                       (ngModelChange)="updateField('SMR', $event ? 1 : 0)"
+                       [disabled]="disabled()" />
+                <i class="pi pi-refresh"></i>
+                <strong>تحديث تلقائي (SMR)</strong>
+                <small>سعر تلقائي من الهامش</small>
+              </label>
+
+              <label class="flag-chip" [class.flag-on]="form().NKD === 1">
+                <input type="checkbox"
+                       [ngModel]="form().NKD === 1"
+                       (ngModelChange)="updateField('NKD', $event ? 1 : 0)"
+                       [disabled]="disabled()" />
+                <i class="pi pi-minus-circle"></i>
+                <strong>غير قابل للإضافة (NKD)</strong>
+                <small>مشتق من صنف آخر</small>
+              </label>
+
+              <label class="flag-chip" [class.flag-on]="form().NORGA === 1">
+                <input type="checkbox"
+                       [ngModel]="form().NORGA === 1"
+                       (ngModelChange)="updateField('NORGA', $event ? 1 : 0)"
+                       [disabled]="disabled()" />
+                <i class="pi pi-tag"></i>
+                <strong>تسعير خاص (NORGA)</strong>
+                <small>استخدام قائمة أسعار</small>
+              </label>
+
+            </div>
+
+            <div class="form-grid">
+              <div class="f-field f-field-wide">
+                <label>معرف خارجي (MOKA)</label>
+                <input type="text" class="f-input" maxlength="50"
+                       [ngModel]="form().MOKA"
+                       (ngModelChange)="updateField('MOKA', $event)"
+                       [disabled]="disabled()" />
+                <small class="f-hint">مرجع خارجي (مثل كود موردك)</small>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ══ TAB: ACCOUNTING ═══════════════════════════════ -->
+        @if (activeTab() === 'accounting') {
+          <div class="form-section">
+            <h4><i class="pi pi-credit-card"></i> الربط المحاسبي</h4>
+            <div class="form-grid">
+
+              <div class="f-field">
+                <label>حساب المبيعات (AML_SNF)</label>
+                <input type="number" class="f-input f-input-num"
+                       [ngModel]="form().AML_SNF"
+                       (ngModelChange)="updateField('AML_SNF', $event ? +$event : 0)"
+                       [disabled]="disabled() || !form().N_AML_SNF" />
+              </div>
+
+              <div class="f-field">
+                <label>فلاغ AML (N_AML_SNF)</label>
+                <input type="number" class="f-input f-input-num" min="0" max="1"
+                       [ngModel]="form().N_AML_SNF"
+                       (ngModelChange)="updateField('N_AML_SNF', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+                <small class="f-hint">إذا =0 يُلغى AML_SNF تلقائياً</small>
+              </div>
+
+              <div class="f-field">
+                <label>حساب الشراء (AB_AML_SNF)</label>
+                <input type="number" class="f-input f-input-num"
+                       [ngModel]="form().AB_AML_SNF"
+                       (ngModelChange)="updateField('AB_AML_SNF', $event ? +$event : null)"
+                       [disabled]="disabled()" />
+              </div>
+
+            </div>
+          </div>
+        }
+
+      }
+    </div>
+  </div>
+
+  <!-- ══ GROUP LOV MODAL ═════════════════════════════════════ -->
+  @if (groupLovOpen()) {
+    <div class="lov-overlay" (click)="closeGroupLov()">
+      <div class="lov-panel" (click)="$event.stopPropagation()">
+        <div class="lov-header">
+          <h3><i class="pi pi-folder-open"></i> اختيار مجموعة الأصناف</h3>
+          <button type="button" class="lov-close" (click)="closeGroupLov()">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <div class="lov-search">
+          <i class="pi pi-search"></i>
+          <input type="search" placeholder="بحث بالرقم أو الاسم..." autofocus
+                 [ngModel]="groupLovSearch()"
+                 (ngModelChange)="groupLovSearch.set($event)" />
+        </div>
+
+        <div class="lov-body">
+          <table class="lov-table">
+            <thead>
+              <tr><th style="width:5rem">الرقم</th><th>الاسم</th></tr>
+            </thead>
+            <tbody>
+              @for (g of groupLovFiltered(); track trackByNode($index, g)) {
+                <tr (click)="pickGroup(g)">
+                  <td class="td-mono">{{ g.NOA }}</td>
+                  <td>{{ g.NAMEA }}</td>
+                </tr>
+              }
+              @if (groupLovFiltered().length === 0) {
+                <tr><td colspan="2" class="empty-cell">
+                  <i class="pi pi-inbox"></i> لا توجد نتائج
+                </td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+</div>

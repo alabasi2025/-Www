@@ -1,0 +1,147 @@
+﻿<div class="smsn-root" dir="rtl">
+  <header class="smsn-titlebar" dir="ltr">
+    <span class="window-icon" aria-hidden="true"></span>
+    <h2>إدخال أرقام التلفونات</h2>
+    <button type="button" class="window-close" title="خروج" (click)="onToolbarAction('exit')" [disabled]="saving()">×</button>
+  </header>
+
+  <app-legacy-toolbar
+    screen="SMSN.FMX"
+    [permissionModel]="toolbarPermissions()"
+    [mode]="mode()"
+    [saving]="saving()"
+    [hasCurrent]="hasCurrent()"
+    title="إدخال أرقام التلفونات"
+    [countBadge]="rows().length + ' حساب'"
+    [actions]="['exit','edit','search','refresh','save','cancel']"
+    [enabledRules]="{
+      exit: !saving(),
+      edit: hasCurrent() && !saving() && !editable(),
+      search: !saving() && !editable(),
+      refresh: !saving(),
+      save: editable() && !saving(),
+      cancel: editable() && !saving()
+    }"
+    (action)="onToolbarAction($event)">
+    <div class="smsn-toolbar-tools" aria-label="اختصارات شاشة أرقام التلفونات">
+      <button type="button" title="أول سجل" aria-label="أول سجل" (click)="navTo('first')" [disabled]="editable() || currentIdx() <= 0">|&lt;</button>
+      <button type="button" title="السجل السابق" aria-label="السجل السابق" (click)="navTo(-1)" [disabled]="editable() || currentIdx() <= 0">&lt;</button>
+      <span title="السجل الحالي">سجل: {{ currentIdx() + 1 }}/{{ rows().length || 1 }}</span>
+      <button type="button" title="السجل التالي" aria-label="السجل التالي" (click)="navTo(1)" [disabled]="editable() || currentIdx() >= rows().length - 1">&gt;</button>
+      <button type="button" title="آخر سجل" aria-label="آخر سجل" (click)="navTo('last')" [disabled]="editable() || currentIdx() >= rows().length - 1">&gt;|</button>
+      <button type="button" title="عرض حسابات العملاء" [class.active]="kind() === 'customers'" (click)="switchKind('customers')" [disabled]="editable()">حسابات العملاء</button>
+      <button type="button" title="عرض الحسابات الأخرى" [class.active]="kind() === 'other'" (click)="switchKind('other')" [disabled]="editable()">حسابات أخرى</button>
+      <input type="search" title="بحث F3" placeholder="بحث..." [ngModel]="search()" (ngModelChange)="search.set($event)" />
+    </div>
+  </app-legacy-toolbar>
+
+  <app-legacy-status-bar
+    [error]="err()"
+    [info]="info()"
+    [badges]="statusBadges()"
+    (dismiss)="clearMessages()" />
+
+  <div class="smsn-layout">
+    <aside class="smsn-list">
+      <div class="panel-title">الحسابات</div>
+      <div class="list-body">
+        @if (loading()) {
+          <div class="empty">جاري التحميل...</div>
+        } @else {
+          @for (row of rows(); track row.NOA) {
+            <button
+              type="button"
+              class="account-card"
+              [class.active]="row.NOA === current()?.NOA"
+              (click)="selectRow(row)">
+              <span class="account-name">{{ row.NAMEA || '-' }}</span>
+              <span class="account-no">{{ row.NOA }}</span>
+              <span class="account-phone">{{ row.NOTLL || row.TEL || row.TEL2 || 'بدون رقم' }}</span>
+            </button>
+          } @empty {
+            <div class="empty">لا توجد حسابات</div>
+          }
+        }
+      </div>
+    </aside>
+
+    <main class="smsn-work">
+      <section class="legacy-window">
+        <div class="window-title">بيانات هاتف الرسائل</div>
+
+        <div class="form-grid">
+          <label>
+            <span>رقم الحساب</span>
+            <input dir="ltr" [value]="current()?.NOA || ''" disabled />
+          </label>
+          <label class="wide">
+            <span>اسم الحساب</span>
+            <input [value]="current()?.NAMEA || ''" disabled />
+          </label>
+          <label>
+            <span>نوع الحساب</span>
+            <input dir="ltr" [value]="current()?.TYPEA || ''" disabled />
+          </label>
+
+          <label>
+            <span>رقم الهاتف 1</span>
+            <input
+              dir="ltr"
+              maxlength="9"
+              [ngModel]="phoneText(current()?.NOTLL)"
+              (ngModelChange)="patch({ NOTLL: $event })"
+              [disabled]="!editable()" />
+          </label>
+          <label>
+            <span>رقم الهاتف 2</span>
+            <input
+              dir="ltr"
+              maxlength="9"
+              [ngModel]="phoneText(current()?.TEL2)"
+              (ngModelChange)="patch({ TEL2: $event })"
+              [disabled]="!editable()" />
+          </label>
+          <label>
+            <span>رقم التلفون</span>
+            <input
+              dir="ltr"
+              maxlength="9"
+              [ngModel]="phoneText(current()?.TEL)"
+              (ngModelChange)="patch({ TEL: $event })"
+              [disabled]="!editable()" />
+          </label>
+        </div>
+
+        <div class="flags">
+          <label class="legacy-check">
+            <input
+              type="checkbox"
+              [ngModel]="boolValue(current()?.SMS)"
+              (ngModelChange)="patch({ SMS: $event ? 1 : 0 })"
+              [disabled]="!editable()" />
+            <span>الخدمة</span>
+          </label>
+          <label class="legacy-check danger">
+            <input
+              type="checkbox"
+              [ngModel]="boolValue(current()?.NOTDLL)"
+              (ngModelChange)="patch({ NOTDLL: $event ? 1 : 0 })"
+              [disabled]="!editable()" />
+            <span>توقيف</span>
+          </label>
+          @if (showWhatsApp()) {
+            <label class="legacy-check">
+              <input
+                type="checkbox"
+                [ngModel]="boolValue(current()?.T_SMS)"
+                (ngModelChange)="patch({ T_SMS: $event ? 1 : 0 })"
+                [disabled]="!editable()" />
+              <span>واتساب</span>
+            </label>
+          }
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+

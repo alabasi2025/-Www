@@ -1,0 +1,32 @@
+<div class="atb-wrap" dir="rtl">
+  @if (title()) {
+    <div class="atb-title">
+      @if (icon()) { <i class="pi {{ icon() }}"></i> }
+      <span>{{ title() }}</span>
+      @if (countBadge()) { <span class="atb-count">{{ countBadge() }}</span> }
+    </div>
+  }
+
+  <div class="atb-actions">
+    @for (a of items(); track a.kind) {
+      <button
+        type="button"
+        class="atb-btn"
+        [class.atb-new]="a.variant === 'new'"
+        [class.atb-edit]="a.variant === 'edit'"
+        [class.atb-del]="a.variant === 'del'"
+        [class.atb-save]="a.variant === 'save'"
+        [class.atb-cancel]="a.variant === 'cancel'"
+        [class.atb-post]="a.variant === 'post'"
+        [class.atb-ghost]="a.variant === 'ghost'"
+        [class.atb-icon-only]="!a.label"
+        [disabled]="a.disabled"
+        [title]="a.title || a.label"
+        (click)="onClick(a)">
+        <i class="pi {{ a.icon }}"></i>
+        @if (a.label) { <span>{{ a.label }}</span> }
+      </button>
+    }
+    <ng-content />
+  </div>
+</div>

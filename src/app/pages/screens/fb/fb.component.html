@@ -1,0 +1,218 @@
+<div class="fb-legacy" dir="rtl">
+  <app-legacy-status-bar [error]="err()" [info]="info()" (dismiss)="clearMessages()" />
+
+  <app-legacy-toolbar
+    screen="FB"
+    [mode]="mode()"
+    [saving]="saving()"
+    [posted]="posted()"
+    [hasCurrent]="!!master()['NOS']"
+    title="فاتورة مبيعات"
+    [countBadge]="invoices().length + ' فاتورة'"
+    [actions]="['exit','new','edit','search','delete','print','refresh','save','post','unpost','add-line','cancel']"
+    [enabledRules]="{
+      exit: !saving(),
+      new: !saving() && !editable(),
+      edit: !!master()['NOS'] && !saving() && !editable() && !posted(),
+      search: !saving(),
+      delete: !!master()['NOS'] && !saving() && !editable() && !posted(),
+      print: !!master()['NOS'] && !saving(),
+      refresh: !saving(),
+      save: !saving() && editable(),
+      post: !!master()['NOS'] && !saving() && !editable() && !posted(),
+      unpost: !!master()['NOS'] && !saving() && !editable() && posted(),
+      'add-line': editable(),
+      cancel: editable() && !saving()
+    }"
+    (action)="onToolbarAction($event)">
+    <div class="legacy-toolbar-nav">
+      <span class="legacy-rec">Record: {{ currentIdx() + 1 }}/{{ invoices().length || 1 }}</span>
+    </div>
+  </app-legacy-toolbar>
+
+  <div class="legacy-frame">
+    <!-- 3-panel header -->
+    <div class="legacy-top-grid">
+      <!-- Right: Date + Customer -->
+      <div class="legacy-panel legacy-panel-right">
+        <div class="legacy-field">
+          <label>تاريخ الفاتورة</label>
+          <input type="date"
+            [ngModel]="master()['DATES'] ? (asStr(master()['DATES']) | date:'yyyy-MM-dd') : ''"
+            (ngModelChange)="setMasterField('DATES', $event)"
+            [disabled]="!editable()" />
+        </div>
+        <div class="legacy-field">
+          <label>حساب العميل</label>
+          <input type="number" [value]="master()['NOA'] || ''" disabled style="width:80px" />
+        </div>
+        <div class="legacy-field legacy-field-wide">
+          <label>اسم العميل</label>
+          <div class="legacy-account-picker">
+            <input type="text" [value]="master()['NAMES'] || ''" disabled />
+            <button type="button" (click)="openCustomerLov()" [disabled]="!editable()">🔍</button>
+          </div>
+        </div>
+        <div class="legacy-field">
+          <label>المخزن</label>
+          <input type="number" [ngModel]="master()['NOMHZND']"
+            (ngModelChange)="setMasterField('NOMHZND', $event)" [disabled]="!editable()" />
+        </div>
+        <div class="legacy-field">
+          <label>مركز التكلفة</label>
+          <input type="number" [ngModel]="master()['MRT']"
+            (ngModelChange)="setMasterField('MRT', $event)" [disabled]="!editable()" />
+        </div>
+      </div>
+
+      <!-- Middle: Amounts -->
+      <div class="legacy-panel legacy-panel-middle">
+        <div class="legacy-field">
+          <label>إجمالي الفاتورة</label>
+          <input type="number" [value]="subtotal() | number:'1.2-2'" disabled class="amount-field" />
+        </div>
+        <div class="legacy-field">
+          <label>الخصم</label>
+          <input type="number" [value]="totalDiscount() | number:'1.2-2'" disabled class="discount-field" />
+        </div>
+        <div class="legacy-field">
+          <label>صافي الفاتورة</label>
+          <input type="number" [value]="netTotal() | number:'1.2-2'" disabled class="net-field" />
+        </div>
+        <div class="legacy-field">
+          <label>العملة</label>
+          <input type="number" [ngModel]="master()['NOAML']"
+            (ngModelChange)="setMasterField('NOAML', $event)" [disabled]="!editable()" />
+        </div>
+        <div class="legacy-field">
+          <label>سعر الصرف</label>
+          <input type="number" step="0.01" [ngModel]="master()['SARSF']"
+            (ngModelChange)="setMasterField('SARSF', $event)" [disabled]="!editable()" />
+        </div>
+      </div>
+
+      <!-- Left: Memo + Status -->
+      <div class="legacy-panel legacy-panel-left">
+        <div class="legacy-field legacy-field-wide">
+          <label>البيان</label>
+          <textarea rows="2" [ngModel]="master()['MEMOS1'] || ''"
+            (ngModelChange)="setMasterField('MEMOS1', $event)" [disabled]="!editable()"></textarea>
+        </div>
+        <div class="legacy-field">
+          <label>رقم القيد</label>
+          <input type="text" [value]="master()['NOK'] || ''" disabled />
+        </div>
+        <div class="legacy-status-box" [class.posted]="posted()">{{ posted() ? 'مستند مرحل' : 'مستند غير مرحل' }}</div>
+      </div>
+    </div>
+
+    <!-- Detail grid — items -->
+    <div class="legacy-grid-panel">
+      <table class="legacy-grid">
+        <thead>
+          <tr>
+            <th style="width:40px">#</th>
+            <th style="width:80px">رقم الصنف</th>
+            <th>اسم الصنف</th>
+            <th style="width:70px">الكمية</th>
+            <th style="width:80px">سعر الوحدة</th>
+            <th style="width:90px">الإجمالي</th>
+            <th style="width:50px">خصم%</th>
+            <th>البيان</th>
+            @if (editable()) { <th style="width:30px"></th> }
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of details(); track d._key; let i = $index) {
+            <tr>
+              <td style="text-align:center;color:#888">{{ i + 1 }}</td>
+              <td>
+                <div class="legacy-name-cell">
+                  <input type="number" [ngModel]="d.NOA" (ngModelChange)="updateDetail(i, 'NOA', $event)" [disabled]="!editable()" style="width:50px" />
+                  <button type="button" (click)="openItemLov(i)" [disabled]="!editable()">🔍</button>
+                </div>
+              </td>
+              <td><input type="text" [value]="d.NAMEA || ''" disabled /></td>
+              <td><input type="number" [ngModel]="d.KMA" (ngModelChange)="updateDetail(i, 'KMA', $event)" [disabled]="!editable()" /></td>
+              <td><input type="number" [ngModel]="d.SARW" (ngModelChange)="updateDetail(i, 'SARW', $event)" [disabled]="!editable()" /></td>
+              <td class="total-cell"><input type="text" [value]="d.TOTLSH | number:'1.2-2'" disabled /></td>
+              <td><input type="number" [ngModel]="d.HSMG" (ngModelChange)="updateDetail(i, 'HSMG', $event)" [disabled]="!editable()" /></td>
+              <td><input type="text" [ngModel]="d.MEMOSF" (ngModelChange)="updateDetail(i, 'MEMOSF', $event)" [disabled]="!editable()" /></td>
+              @if (editable()) {
+                <td><button class="del-row-btn" (click)="removeDetailRow(i)">✕</button></td>
+              }
+            </tr>
+          }
+          <!-- Empty placeholder rows -->
+          @for (n of [0,1,2,3,4]; track n) {
+            @if (n >= details().length - 1) {
+              <tr class="legacy-empty-row">
+                <td><input disabled /></td>
+                <td><input disabled /></td>
+                <td><input disabled /></td>
+                <td><input disabled /></td>
+                <td><input disabled /></td>
+                <td><input disabled /></td>
+                <td><input disabled /></td>
+                <td><input disabled /></td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Bottom totals -->
+    <div class="legacy-bottom">
+      <div class="legacy-bottom-right">
+        <div class="legacy-total-line"><span>عدد الأصناف</span><strong>{{ details().length }}</strong></div>
+        <div class="legacy-total-line"><span>الإجمالي</span><strong>{{ subtotal() | number:'1.2-2' }}</strong></div>
+        <div class="legacy-total-line"><span>الخصم</span><strong>{{ totalDiscount() | number:'1.2-2' }}</strong></div>
+        <div class="legacy-total-line"><span>الصافي</span><strong>{{ netTotal() | number:'1.2-2' }}</strong></div>
+      </div>
+    </div>
+
+    @if (master()['NOS']) {
+      <app-legacy-audit-footer class="legacy-audit" [record]="masterRecord()" />
+    }
+  </div>
+</div>
+
+<!-- Customer LOV -->
+<app-lov-picker
+  [open]="lovIsOpen()"
+  [rtba]="5"
+  title="دليل الحسابات — العملاء"
+  (select)="selectFromLov($event)"
+  (close)="closeLov()" />
+
+<!-- Item LOV -->
+@if (itemLovOpen()) {
+  <div class="lov-overlay" (click)="closeItemLov()">
+    <div class="lov-modal" (click)="$event.stopPropagation()" dir="rtl">
+      <div class="lov-header">
+        <span>🔍 بحث الأصناف</span>
+        <button class="lov-close" (click)="closeItemLov()">×</button>
+      </div>
+      <div class="lov-search">
+        <input type="text" placeholder="بحث بالاسم أو الرقم..."
+          [ngModel]="itemSearchQ()" (ngModelChange)="searchItems($event)" autofocus />
+      </div>
+      <div class="lov-results">
+        <table>
+          <thead><tr><th>رقم</th><th>اسم الصنف</th><th>المجموعة</th><th>السعر</th></tr></thead>
+          <tbody>
+            @for (item of itemSearchResults(); track item.NOA) {
+              <tr (click)="selectItem(item)">
+                <td class="mono">{{ item.NOA }}</td>
+                <td>{{ item.NAMEA }}</td>
+                <td class="mono">{{ item.NOAN }}</td>
+                <td class="mono">{{ item.SART | number:'1.2-2' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+}

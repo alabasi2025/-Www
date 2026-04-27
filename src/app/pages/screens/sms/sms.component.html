@@ -1,0 +1,110 @@
+﻿<div class="sms-root" dir="rtl">
+  <header class="sms-titlebar" dir="ltr">
+    <span class="window-icon" aria-hidden="true"></span>
+    <h2>شاشة إرسال الرسائل</h2>
+    <button type="button" class="window-close" title="خروج" (click)="onToolbarAction('exit')" [disabled]="saving()">×</button>
+  </header>
+
+  <app-legacy-toolbar
+    screen="SMS.FMX"
+    [permissionModel]="permissionModel()"
+    mode="browse"
+    [saving]="saving()"
+    [hasCurrent]="rows().length > 0"
+    title="شاشة إرسال الرسائل"
+    [countBadge]="(counts().ROWS_COUNT || 0) + ' رسالة'"
+    [actions]="['exit','search','refresh','save','delete']"
+    [enabledRules]="{ exit: !saving(), search: !saving(), refresh: !saving(), save: !saving(), delete: !saving() && rows().length > 0 }"
+    (action)="onToolbarAction($event)">
+    <div class="sms-toolbar-tools" aria-label="أدوات شاشة إرسال الرسائل">
+      <button type="button" title="تصدير إلى D:\SMS" (click)="exportNotice()" [disabled]="saving()">تصدير إلى D:\SMS</button>
+      <button type="button" title="إرسال عبر النت - محروس" (click)="internetNotice()" [disabled]="saving()">إرسال عبر النت</button>
+    </div>
+  </app-legacy-toolbar>
+
+  <app-legacy-status-bar [error]="err()" [info]="info()" [badges]="statusBadges()" (dismiss)="clearMessages()" />
+
+  <section class="sms-panel header-panel">
+    <div class="panel-title">خيارات الرسائل كما في القديم</div>
+    <div class="form-grid">
+      <label>
+        <span>رسائل مصدرة ليوم</span>
+        <input [value]="(settings().DATESMS || movementDate()) | date:'yyyy/MM/dd'" disabled />
+      </label>
+      <label>
+        <span>نوع الرسالة</span>
+        <select [ngModel]="messageType()" (ngModelChange)="messageType.set($event)" [disabled]="saving()">
+          <option value="4">رسالة نصية للجميع</option>
+          <option value="5">رسالة رصيد لكل العملاء</option>
+          <option value="1">رسائل إجمالي حركة والرصيد</option>
+          <option value="2">رسائل تفصيلي للحساب</option>
+          <option value="3">رسائل إجمالي مستندات</option>
+          <option value="6">رسائل إجمالي حركة اليوم والرصيد</option>
+        </select>
+      </label>
+      <label>
+        <span>نوع الحسابات</span>
+        <select [ngModel]="accountScope()" (ngModelChange)="accountScope.set($event)" [disabled]="saving()">
+          <option value="all">فقط العملاء والموردين</option>
+          <option value="customers">فقط العملاء</option>
+          <option value="customers-other">فقط العملاء والحسابات الأخرى</option>
+          <option value="no-suppliers">بدون الموردين</option>
+        </select>
+      </label>
+      <label class="check-row">
+        <input type="checkbox" [ngModel]="addDate()" (ngModelChange)="addDate.set($event)" [disabled]="saving()" />
+        <span>إضافة التاريخ للرسالة</span>
+      </label>
+      <label class="check-row">
+        <input type="checkbox" [ngModel]="fixedSelection()" (ngModelChange)="fixedSelection.set($event)" [disabled]="saving()" />
+        <span>تثبيت التحديد دائماً</span>
+      </label>
+    </div>
+  </section>
+
+  <section class="sms-panel text-panel">
+    <div class="panel-title">نص الرسالة</div>
+    <textarea [ngModel]="messageText()" (ngModelChange)="messageText.set($event)" [disabled]="saving()" placeholder="نص الرسالة"></textarea>
+  </section>
+
+  <div class="sms-layout">
+    <section class="sms-panel queue-panel">
+      <div class="panel-title">الرسائل المصدرة</div>
+      <div class="grid-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>رقم</th>
+              <th>الهاتف</th>
+              <th>الاسم</th>
+              <th>نص الرسالة</th>
+              <th>العملة</th>
+              <th>الحساب</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (loading()) {
+              <tr><td colspan="6" class="empty">جاري التحميل...</td></tr>
+            } @else {
+              @for (row of rows(); track row.CUSTOMERN) {
+                <tr>
+                  <td>{{ row.CUSTOMERN }}</td>
+                  <td dir="ltr">{{ row.PHONENO }}</td>
+                  <td>{{ row.CUSTOMERNAME }}</td>
+                  <td>{{ row.MS1 }} {{ row.MS2 }}</td>
+                  <td>{{ row.NOAML }}</td>
+                  <td>{{ row.NOA }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="6" class="empty">لا توجد رسائل مصدرة</td></tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+

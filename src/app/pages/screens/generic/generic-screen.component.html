@@ -1,0 +1,490 @@
+<app-legacy-window [title]="title()" [class.generic-report-window]="isReportScreen()">
+  <div class="generic-legacy" dir="rtl">
+    <app-legacy-toolbar
+      [screen]="namee()"
+      [title]="namee()"
+      [countBadge]="isReportScreen() ? '' : (kb()?.baseTable || '')"
+      [mode]="mode()"
+      [hasCurrent]="!!selected()"
+      [posted]="false"
+      [saving]="saving()"
+      [actions]="toolbarActions()"
+      [enabledRules]="enabledRules()"
+      [permissionModel]="permissionModel"
+      (action)="onToolbarAction($event)">
+      <div class="legacy-search">
+        <label>بحث</label>
+        <input
+          type="search"
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event)"
+        />
+      </div>
+    </app-legacy-toolbar>
+
+    <app-legacy-status-bar
+      [error]="err()"
+      [info]="info()"
+      [badges]="isReportScreen() ? [] : statusBadges()"
+      (dismiss)="clearStatus()"
+    />
+
+    @if (lovDialog(); as lov) {
+      <div class="legacy-lov-backdrop" (click)="closeLegacyLov()">
+        <div class="legacy-lov-dialog" (click)="$event.stopPropagation()" dir="rtl">
+          <header>
+            <strong>{{ lov.title }}</strong>
+            <span>{{ lov.field.block }}.{{ lov.field.item }}</span>
+          </header>
+
+          <div class="legacy-lov-search-row">
+            <input
+              type="text"
+              [ngModel]="lov.query"
+              (ngModelChange)="setLegacyLovQuery($event)"
+              (keydown.enter)="fetchLegacyLov(); $event.preventDefault()"
+              autofocus
+            />
+            <span>Find</span>
+            <button type="button" (click)="fetchLegacyLov()">Find</button>
+          </div>
+
+          <div class="legacy-lov-grid">
+            <table>
+              <thead>
+                <tr>
+                  @for (col of lov.columns.slice(0, 8); track col) {
+                    <th>{{ col }}</th>
+                  }
+                </tr>
+              </thead>
+              <tbody>
+                @if (lov.loading) {
+                  <tr>
+                    <td [attr.colspan]="lov.columns.length || 1">جاري البحث...</td>
+                  </tr>
+                } @else if (lov.error) {
+                  <tr>
+                    <td [attr.colspan]="lov.columns.length || 1">{{ lov.error }}</td>
+                  </tr>
+                } @else if (lov.rows.length === 0) {
+                  <tr>
+                    <td [attr.colspan]="lov.columns.length || 1">لا توجد نتائج</td>
+                  </tr>
+                } @else {
+                  @for (row of lov.rows; track $index) {
+                    <tr
+                      [class.selected]="lov.selected === row"
+                      (click)="selectLegacyLovRow(row)"
+                      (dblclick)="applyLegacyLovRow(row)">
+                      @for (col of lov.columns.slice(0, 8); track col) {
+                        <td>{{ rowCell(row, col) }}</td>
+                      }
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+
+          <footer>
+            <span>Choices in list: {{ lov.rows.length }}</span>
+            <div>
+              <button type="button" (click)="closeLegacyLov()">Cancel</button>
+              <button type="button" [disabled]="!lov.selected" (click)="confirmLegacyLov()">OK</button>
+              <button type="button" (click)="fetchLegacyLov()">Find</button>
+            </div>
+          </footer>
+        </div>
+      </div>
+    }
+
+    @if (isReportScreen()) {
+      <section class="legacy-report-workspace">
+        <div class="legacy-report-card">
+          <header class="legacy-report-header">
+            <div>
+              <strong>{{ title() }}</strong>
+              <span>{{ namee() }}</span>
+            </div>
+            <div class="legacy-report-actions">
+              <button type="button" (click)="onPrint()" [disabled]="reportOptions().length === 0">طباعة</button>
+              <button type="button" (click)="onReportSearch()">بحث</button>
+              <button type="button" (click)="refreshReportScreen()">تحديث</button>
+              <button type="button" (click)="onToolbarAction('exit')">خروج</button>
+            </div>
+          </header>
+
+          <div class="legacy-report-criteria">
+            @if (reportOptions().length > 0) {
+              <label class="legacy-report-select">
+                <span>التقرير</span>
+                <select
+                  [ngModel]="currentReport()"
+                  (ngModelChange)="selectedReport.set($event)">
+                  @for (report of reportOptions(); track report) {
+                    <option [value]="report">{{ report }}</option>
+                  }
+                </select>
+              </label>
+            }
+
+            @if (reportFilters().length > 0) {
+              @for (filter of reportFilters(); track filter.key) {
+                <label class="legacy-report-filter">
+                  <span>{{ filter.label }}</span>
+                  <input
+                    [type]="filter.type"
+                    [placeholder]="filter.placeholder || ''"
+                    [ngModel]="reportParam(filter.key)"
+                    (ngModelChange)="setReportParam(filter.key, $event)"
+                  />
+                </label>
+              }
+            }
+          </div>
+
+          @if (legacyBlocks().length > 0) {
+            <div class="legacy-report-oracle-criteria">
+              @for (block of legacyBlocks(); track block.name) {
+                <article class="legacy-report-block">
+                  <header>
+                    <strong>{{ block.name }}</strong>
+                    <span>{{ block.fields.length }} حقل</span>
+                  </header>
+                  <div class="legacy-block-fields">
+                    @for (field of block.fields; track field.key) {
+                      @if (field.kind === 'button') {
+                        <button
+                          type="button"
+                          class="legacy-field-button"
+                          [attr.data-field-key]="field.key"
+                          [class.lov]="field.hasLov"
+                          (click)="activateLegacyField(field)">
+                          {{ field.item }}
+                        </button>
+                      } @else {
+                        <label
+                          class="legacy-oracle-field"
+                          [attr.data-field-key]="field.key"
+                          [class.lov]="field.hasLov"
+                          [class.checkbox]="field.kind === 'checkbox'">
+                          <span>{{ field.item }}</span>
+                          @if (field.kind === 'checkbox') {
+                            <input
+                              type="checkbox"
+                              [checked]="field.value === '1' || field.value === 'true'"
+                              (change)="setLegacyField(field, $any($event.target).checked)"
+                              [disabled]="!legacyFieldsEditable()"
+                            />
+                          } @else {
+                            <input
+                              [type]="field.kind"
+                              [value]="field.value"
+                              (input)="setLegacyField(field, $any($event.target).value)"
+                              (keydown.f9)="openLegacyLov(field); $event.preventDefault()"
+                              [disabled]="!legacyFieldsEditable()"
+                            />
+                          }
+                          @if (field.hasLov) {
+                            <button
+                              type="button"
+                              class="legacy-field-lov"
+                              (click)="openLegacyLov(field); $event.stopPropagation()">
+                              ...
+                            </button>
+                          }
+                        </label>
+                      }
+                    }
+                  </div>
+                </article>
+              }
+            </div>
+          }
+
+        </div>
+      </section>
+    } @else {
+    <section class="legacy-gate-panel">
+      @for (gate of completionGates(); track gate.label) {
+        <div class="legacy-gate" [class.pass]="gate.pass" [class.warn]="!gate.pass">
+          <strong>{{ gate.label }}</strong>
+          <span>{{ gate.detail }}</span>
+        </div>
+      }
+    </section>
+
+    <section class="legacy-summary">
+      <div class="legacy-field">
+        <span>اسم الشاشة</span>
+        <strong>{{ title() }}</strong>
+      </div>
+      <div class="legacy-field">
+        <span>رمز الشاشة</span>
+        <strong>{{ namee() }}</strong>
+      </div>
+      <div class="legacy-field">
+        <span>الجدول الرئيسي</span>
+        <strong>{{ baseTableLabel() }}</strong>
+      </div>
+      <div class="legacy-field">
+        <span>المصدر القديم</span>
+        <strong>{{ sourceMeta()?.sourcePath || '-' }}</strong>
+      </div>
+    </section>
+
+    @if (legacyBlocks().length > 0) {
+      <section class="legacy-blocks-panel">
+        <div class="legacy-panel-title">
+          <span>حقول Oracle Forms القديمة</span>
+          <span>{{ legacyBlocks().length }} Block</span>
+        </div>
+        <div class="legacy-blocks-body">
+          @for (block of legacyBlocks(); track block.name) {
+            <article class="legacy-block-card">
+              <header>
+                <strong>{{ block.name }}</strong>
+                <span>{{ block.fields.length }} حقل</span>
+              </header>
+              @if (block.triggers.length > 0) {
+                <div class="legacy-trigger-row">
+                  @for (trigger of block.triggers; track trigger) {
+                    <span>{{ trigger }}</span>
+                  }
+                </div>
+              }
+              <div class="legacy-block-fields">
+                @for (field of block.fields; track field.key) {
+                  @if (field.kind === 'button') {
+                    <button
+                      type="button"
+                      class="legacy-field-button"
+                      [attr.data-field-key]="field.key"
+                      [class.lov]="field.hasLov"
+                      (click)="activateLegacyField(field)">
+                      {{ field.item }}
+                    </button>
+                  } @else {
+                    <label
+                      class="legacy-oracle-field"
+                      [attr.data-field-key]="field.key"
+                      [class.lov]="field.hasLov"
+                      [class.checkbox]="field.kind === 'checkbox'">
+                      <span>{{ field.item }}</span>
+                      @if (field.kind === 'checkbox') {
+                        <input
+                          type="checkbox"
+                          [checked]="field.value === '1' || field.value === 'true'"
+                          (change)="setLegacyField(field, $any($event.target).checked)"
+                          [disabled]="!legacyFieldsEditable()"
+                        />
+                      } @else {
+                        <input
+                          [type]="field.kind"
+                          [value]="field.value"
+                          (input)="setLegacyField(field, $any($event.target).value)"
+                          (keydown.f9)="openLegacyLov(field); $event.preventDefault()"
+                          [disabled]="!legacyFieldsEditable()"
+                        />
+                      }
+                      @if (field.hasLov) {
+                        <button
+                          type="button"
+                          class="legacy-field-lov"
+                          (click)="openLegacyLov(field); $event.stopPropagation()">
+                          ...
+                        </button>
+                      }
+                    </label>
+                  }
+                }
+              </div>
+            </article>
+          }
+        </div>
+      </section>
+    }
+
+    @if (showReportPanel()) {
+      <section class="legacy-report-panel">
+        <div class="legacy-panel-title">
+          <span>تقارير Oracle القديمة</span>
+          <span>{{ reportPanelCountLabel() }}</span>
+        </div>
+        <div class="legacy-report-body">
+          @if (reportOptions().length > 0) {
+            <label class="legacy-report-select">
+              <span>التقرير</span>
+              <select
+                [ngModel]="currentReport()"
+                (ngModelChange)="selectedReport.set($event)">
+                @for (report of reportOptions(); track report) {
+                  <option [value]="report">{{ report }}</option>
+                }
+              </select>
+            </label>
+            @if (selectedReportMeta()) {
+              <div
+                class="legacy-report-file"
+                [class.missing]="!selectedReportMeta()?.exists"
+              >
+                <strong>{{ selectedReportMeta()?.exists ? 'ملف التقرير موجود' : 'ملف التقرير غير موجود' }}</strong>
+                <span>{{ reportFileLabel() }}</span>
+              </div>
+            }
+            <button type="button" class="legacy-print-btn" (click)="onPrint()">
+              طباعة التقرير المحدد
+            </button>
+          } @else {
+            <div class="legacy-report-file missing">
+              <strong>لا يوجد ملف تقرير مسجل</strong>
+              <span>تم إظهار الفلاتر الأساسية من metadata وحقول Oracle Forms إلى حين ربط ملف الطباعة.</span>
+            </div>
+          }
+          @if (reportFilters().length > 0) {
+            <div class="legacy-report-filters">
+              @for (filter of reportFilters(); track filter.key) {
+                <label class="legacy-report-filter">
+                  <span>{{ filter.label }}</span>
+                  <input
+                    [type]="filter.type"
+                    [placeholder]="filter.placeholder || ''"
+                    [ngModel]="reportParam(filter.key)"
+                    (ngModelChange)="setReportParam(filter.key, $event)"
+                  />
+                </label>
+              }
+            </div>
+          }
+          @if (activeReportCriteria().length > 0) {
+            <div class="legacy-report-tags criteria">
+              <strong>معايير التشغيل الحالية:</strong>
+              @for (item of activeReportCriteria(); track item.key) {
+                <span>{{ item.key }}={{ item.value }}</span>
+              }
+            </div>
+          }
+          @if (calledForms().length > 0) {
+            <div class="legacy-report-tags">
+              <strong>الشاشات المرتبطة:</strong>
+              @for (form of calledForms(); track form) {
+                <button type="button" class="legacy-tag-button" (click)="openCalledForm(form)">
+                  {{ form }}
+                </button>
+              }
+            </div>
+          }
+          @if (lovsAndRoutines().length > 0) {
+            <div class="legacy-report-tags">
+              <strong>LOV / Packages:</strong>
+              @for (item of lovsAndRoutines(); track item) {
+                <span>{{ item }}</span>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    @if (spec()) {
+      <section class="legacy-dependency-panel">
+        <div class="legacy-panel-title">
+          <span>تبعيات المصدر القديم</span>
+          <span>{{ dependencyTables().length }} جدول / {{ dependencyApi().length }} API</span>
+        </div>
+        <div class="legacy-dependency-body">
+          @if (dependencyTables().length > 0) {
+            <div class="legacy-report-tags">
+              <strong>الجداول:</strong>
+              @for (table of dependencyTables(); track table) {
+                <span>{{ table }}</span>
+              }
+            </div>
+          }
+          @if (dependencyApi().length > 0) {
+            <div class="legacy-report-tags">
+              <strong>Coverage API:</strong>
+              @for (api of dependencyApi(); track api) {
+                <span>{{ api }}</span>
+              }
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    @if (selected() || editable()) {
+      <section class="legacy-form-panel">
+        <div class="legacy-panel-title">
+          {{ editable() ? (mode() === 'new' ? 'سجل جديد' : 'تعديل السجل') : 'بيانات السجل' }}
+        </div>
+        <div class="legacy-form-grid">
+          @for (col of columns().slice(0, 24); track col.name) {
+            <label class="legacy-input-cell" [class.pk-field]="pkCols().includes(col.name)">
+              <span>{{ col.name }}</span>
+              <input
+                [type]="isNumCol(col.name) ? 'number' : isDateCol(col.name) ? 'date' : 'text'"
+                [ngModel]="asStr(form()[col.name])"
+                (ngModelChange)="setField(col.name, $event)"
+                [disabled]="!editable() || pkCols().includes(col.name)"
+              />
+            </label>
+          }
+        </div>
+      </section>
+    }
+
+    <section class="legacy-grid-panel">
+      <div class="legacy-panel-title">
+        <span>{{ title() }}</span>
+        <span>{{ filteredRows().length }} / {{ total() }}</span>
+      </div>
+
+      <app-legacy-data-grid>
+        <table class="legacy-table">
+          <thead>
+            <tr>
+              @for (col of columns().slice(0, 10); track col.name) {
+                <th [class.pk]="pkCols().includes(col.name)">{{ col.name }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @if (loading()) {
+              <tr>
+                <td [attr.colspan]="columns().slice(0, 10).length || 1" class="empty-row">
+                  جاري التحميل...
+                </td>
+              </tr>
+            } @else if (!hasGridData()) {
+              <tr>
+                <td [attr.colspan]="1" class="empty-row">
+                  لا يوجد KB تفصيلي للجدول، تم عرض تبعيات الشاشة من المصدر القديم أعلاه.
+                </td>
+              </tr>
+            } @else {
+              @for (row of filteredRows(); track $index) {
+                <tr (click)="selectRow(row)" [class.selected]="row === selected()">
+                  @for (col of columns().slice(0, 10); track col.name) {
+                    <td [class.num]="isNumCol(col.name)">
+                      {{ asStr(row[col.name]) | slice:0:80 }}
+                    </td>
+                  }
+                </tr>
+              }
+              @if (filteredRows().length === 0) {
+                <tr>
+                  <td [attr.colspan]="columns().slice(0, 10).length || 1" class="empty-row">
+                    لا توجد سجلات
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </app-legacy-data-grid>
+    </section>
+    }
+  </div>
+</app-legacy-window>

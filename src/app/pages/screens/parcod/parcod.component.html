@@ -1,0 +1,170 @@
+﻿<div class="parcod-legacy" dir="rtl">
+
+  @if (err() || info()) {
+    <div class="msg-bar" [class.msg-error]="!!err()" [class.msg-info]="!err() && !!info()">
+      <span>{{ err() || info() }}</span>
+      <button type="button" class="msg-close" (click)="clearMessages()"><i class="pi pi-times"></i></button>
+    </div>
+  }
+
+  <div class="toolbar-row" dir="ltr">
+    <div class="toolbar-icons">
+      <button class="tb-btn tb-refresh" type="button" title="إعادة تحميل"
+              (click)="fetchAll()" [disabled]="saving() || loading()">
+        <i class="pi pi-sync"></i>
+      </button>
+    </div>
+    <div class="toolbar-title">إدخال باركودات الأصناف</div>
+  </div>
+
+  <div class="body-row">
+    <div class="panel form-panel">
+
+      <!-- item picker -->
+      <div class="f-field f-wide">
+        <label>الصنف</label>
+        <div class="lov-input">
+          <input class="f-input" readonly
+                 [value]="selectedItem() ? (selectedItem()!.NOA + ' - ' + (selectedItem()!.NAMEA ?? '')) : ''" />
+          <button type="button" class="lov-btn" (click)="openItemLov()" title="اختر صنفا">
+            <i class="pi pi-search"></i>
+          </button>
+        </div>
+      </div>
+
+      @if (selectedItem()) {
+        <!-- add barcode row -->
+        <div class="panel section-panel">
+          <div class="panel-title">إضافة باركود جديد</div>
+          <div class="panel-body">
+            <div class="f-grid">
+              <div class="f-field field-nop">
+                <label>الباركود</label>
+                <input type="text" class="f-input" dir="ltr" maxlength="30"
+                       [ngModel]="addForm().NOP"
+                       (ngModelChange)="updateAddField('NOP', $event)" />
+              </div>
+              <div class="f-field field-noob">
+                <label>العدد في العبوة</label>
+                <input type="number" class="f-input" dir="ltr" min="1"
+                       [ngModel]="addForm().NOOB"
+                       (ngModelChange)="updateAddField('NOOB', +$event || 1)" />
+              </div>
+              <div class="f-field field-btn">
+                <button type="button" class="btn-add" (click)="onAdd()"
+                        [disabled]="!canIns() || saving() || !addForm().NOP.trim()">
+                  <i class="pi pi-plus"></i> إضافة
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- barcodes grid for selected item -->
+        <div class="panel section-panel">
+          <div class="panel-title">باركودات الصنف ({{ barcodesForItem().length }})</div>
+          <div class="panel-body p-0">
+            <table class="legacy-grid">
+              <thead>
+                <tr>
+                  <th style="width: 45%">الباركود</th>
+                  <th style="width: 25%">العدد في العبوة</th>
+                  <th style="width: 30%">الإجراءات</th>
+                </tr>
+              </thead>
+              <tbody>
+                @if (barcodesForItem().length === 0) {
+                  <tr><td colspan="3" class="empty">لا توجد باركودات</td></tr>
+                } @else {
+                  @for (b of barcodesForItem(); track trackByNop($index, b)) {
+                    <tr>
+                      <td class="mono">{{ b.NOP }}</td>
+                      <td>
+                        <input type="number" class="f-input mini" dir="ltr" min="1"
+                               [ngModel]="b.NOOB"
+                               (ngModelChange)="onUpdateNoob(b, +$event || 1)" />
+                      </td>
+                      <td class="actions">
+                        <button type="button" class="btn-del" (click)="onDelete(b)"
+                                [disabled]="!canDe() || saving()">
+                          <i class="pi pi-trash"></i> حذف
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      } @else {
+        <div class="empty-hint">
+          <i class="pi pi-barcode"></i>
+          <p>اختر صنفا من زر البحث لعرض باركوداته وإضافة باركودات جديدة.</p>
+        </div>
+      }
+    </div>
+
+    <!-- Global barcode search sidebar -->
+    <div class="panel list-panel">
+      <div class="list-search">
+        <input class="f-input" placeholder="بحث عن باركود في كل الأصناف..."
+               [ngModel]="globalSearch()" (ngModelChange)="globalSearch.set($event)" />
+      </div>
+      <div class="list-scroll">
+        @if (globalSearch().trim().length === 0) {
+          <div class="list-empty">ابدأ بكتابة باركود للبحث</div>
+        } @else if (globalFiltered().length === 0) {
+          <div class="list-empty">لا توجد نتائج</div>
+        } @else {
+          @for (b of globalFiltered(); track trackByNop($index, b)) {
+            <button type="button" class="list-item"
+                    (click)="selectFromGlobal(b)">
+              <span class="li-code">{{ b.NOP }}</span>
+              <span class="li-name">{{ b.ITEM_NAME || ('صنف ' + b.NOA) }}</span>
+              <span class="li-noob">×{{ b.NOOB }}</span>
+            </button>
+          }
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Item LOV overlay -->
+  @if (itemLovOpen()) {
+    <div class="lov-overlay" (click)="closeItemLov()">
+      <div class="lov-dialog" (click)="$event.stopPropagation()">
+        <div class="lov-head">
+          <h3>اختر صنفا</h3>
+          <button type="button" (click)="closeItemLov()"><i class="pi pi-times"></i></button>
+        </div>
+        <div class="lov-search">
+          <input class="f-input" placeholder="بحث بالرقم أو الاسم أو الاختصار..."
+                 [ngModel]="itemLovSearch()"
+                 (ngModelChange)="itemLovSearch.set($event)" />
+        </div>
+        <div class="lov-results">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 90px">الرقم</th>
+                <th>الاسم</th>
+                <th style="width: 80px">الاختصار</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (i of itemLovFiltered(); track trackByItem($index, i)) {
+                <tr (click)="pickItem(i)">
+                  <td class="mono">{{ i.NOA }}</td>
+                  <td>{{ i.NAMEA }}</td>
+                  <td class="mono">{{ i.AHSAR }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

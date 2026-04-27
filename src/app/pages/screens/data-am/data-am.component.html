@@ -1,0 +1,367 @@
+<div class="party-legacy" dir="rtl">
+
+  <!-- ══════════════════════════════════════════════════════════════
+       Message bar (errors + info) — same component as SNDKD / SYSALL
+       ══════════════════════════════════════════════════════════════ -->
+  @if (err() || info()) {
+    <div class="msg-bar" [class.msg-error]="!!err()" [class.msg-info]="!err() && !!info()">
+      <span>{{ err() || info() }}</span>
+      <button type="button" class="msg-close" (click)="clearMessages()"><i class="pi pi-times"></i></button>
+    </div>
+  }
+
+  <!-- ══════════════════════════════════════════════════════════════
+       Toolbar — legacy 8-icon palette (matches screenshot order RTL)
+       ══════════════════════════════════════════════════════════════ -->
+  <div class="toolbar-row screen-caption" dir="rtl">
+    <div class="toolbar-title">{{ windowTitle() }}</div>
+    <div class="window-controls">
+      <button type="button" tabindex="-1">_</button>
+      <button type="button" tabindex="-1">□</button>
+      <button type="button" tabindex="-1" (click)="onExit()">×</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       Breadcrumb tabs (الأصول / الأصول المتداولة / عملاء محليون ...)
+       ══════════════════════════════════════════════════════════════ -->
+  <div class="tabs-strip">
+    <div class="tabs-search">
+      <input #legacySearchInput class="f-input"
+             [ngModel]="search()"
+             (ngModelChange)="search.set($event)"
+             (keydown.enter)="onSearch()" />
+      <span>بحث</span>
+    </div>
+    <div class="legacy-path-fields">
+      @for (t of legacyPathFields(); track t) {
+        <input class="legacy-path-field" [value]="t" readonly tabindex="-1" />
+      }
+      <select class="legacy-noa4-select"
+              [ngModel]="legacyActiveNoa4()"
+              (ngModelChange)="onLegacyNoa4Change($event)"
+              [disabled]="editable() || saving()">
+        @for (n of legacyBranchOptions(); track n.NOA) {
+          <option [ngValue]="n.NOA">{{ legacyDisplayName(n.NAMEA) }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       Main body: form (centre) + sidebar (right)
+       ══════════════════════════════════════════════════════════════ -->
+  <div class="body-row">
+
+    <!-- ═════════════════ main form (centre) ═════════════════ -->
+    <div class="panel form-panel">
+
+      <!-- Header row: the old form shows one "رقم العميل" label with two boxes. -->
+      <div class="legacy-number-row">
+        <label>{{ entityNumberLabel() }}</label>
+        <input class="f-input legacy-noa-box" dir="ltr"
+               [value]="form().NOA ?? ''" disabled />
+        <input type="number" class="f-input legacy-noysoft-box" dir="ltr"
+               [ngModel]="form().NOYSOFT"
+               (ngModelChange)="updateField('NOYSOFT', +$event || null)"
+               [disabled]="!editable()" />
+      </div>
+
+      <!-- Full-width name field -->
+      <div class="f-field f-wide">
+        <label>{{ entityNameLabel() }}</label>
+        <input type="text" class="f-input" maxlength="100"
+               [ngModel]="form().NAMEA"
+               (ngModelChange)="updateField('NAMEA', $event)"
+               [disabled]="!editable()" />
+      </div>
+
+      <!-- Group + shortcut + general-account check -->
+      <div class="f-grid">
+        <div class="f-field field-typea">
+          <label>المجموعة</label>
+          <div class="lov-input group-lov-input">
+            <select class="f-input"
+                    [ngModel]="form().NOG ?? 1"
+                    (ngModelChange)="onGroupChange($event)"
+                    [disabled]="!editable()">
+              @if (!groups().length) {
+                <option [ngValue]="1">{{ kind() === 'customer' ? 'عملاء محليين' : 'موردين محليين' }}</option>
+              }
+              @for (g of groups(); track g.NOG) {
+                <option [ngValue]="g.NOG">{{ legacyDisplayName(g.NAMEG) }}</option>
+              }
+            </select>
+            <button type="button" class="lov-dot-btn" (click)="openGroupScreen()"
+                    [disabled]="editable() || saving()"
+                    title="اضافة مجموعة">...</button>
+          </div>
+        </div>
+        @if (kind() === 'supplier') {
+          <div class="f-field field-region">
+            <label>المنطقة</label>
+            <select class="f-input"
+                    [ngModel]="form().MNTKA"
+                    (ngModelChange)="onRegionChange($event)"
+                    [disabled]="!editable()">
+              <option [ngValue]="null"></option>
+              @if (form().MNTKA && !regions().length) {
+                <option [ngValue]="form().MNTKA">المنطقة {{ form().MNTKA }}</option>
+              }
+              @for (r of regions(); track r.NOG) {
+                <option [ngValue]="r.NOG">{{ r.NAMEG }}</option>
+              }
+            </select>
+          </div>
+        }
+        <div class="f-field field-ahsar">
+          <label>اختصار للبحث</label>
+          <input type="text" class="f-input" maxlength="10"
+                 [ngModel]="form().AHSAR"
+                 (ngModelChange)="updateField('AHSAR', $event)"
+                 [disabled]="!editable()" />
+        </div>
+        <div class="f-field field-nokyed">
+          <label class="legacy-check inline">
+            <input type="checkbox"
+                   [ngModel]="form().HALL === 1"
+                   (ngModelChange)="updateField('HALL', $event ? 1 : 0)"
+                   [disabled]="!editable()" />
+            <span>حساب عام</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="currency-mini-grid" aria-label="عملات الحساب">
+        <div class="mini-head">
+          <span>عملات الحساب</span>
+          <span>السقف</span>
+        </div>
+        @for (_ of [0, 1, 2, 3]; track _) {
+          <div class="mini-row">
+            <button type="button" class="mini-select" [disabled]="!editable()">⌄</button>
+            <input class="mini-input" [value]="_ === 0 ? 'يمني' : ''" disabled />
+            <input class="mini-input" disabled />
+          </div>
+        }
+      </div>
+
+      <!-- Company / shop -->
+      <div class="f-field f-wide">
+        <label>الشركة/المحل</label>
+        <input type="text" class="f-input" maxlength="100"
+               [ngModel]="form().CNAME"
+               (ngModelChange)="updateField('CNAME', $event)"
+               [disabled]="!editable()" />
+      </div>
+
+      <!-- Address -->
+      <div class="f-field f-wide">
+        <label>العنوان</label>
+        <input type="text" class="f-input" maxlength="100"
+               [ngModel]="form().ADRS"
+               (ngModelChange)="updateField('ADRS', $event)"
+               [disabled]="!editable()" />
+      </div>
+
+      <!-- Guarantor -->
+      <div class="f-field f-wide">
+        <label>الضامن</label>
+        <input type="text" class="f-input" maxlength="100"
+               [ngModel]="form().NAMEDMIN"
+               (ngModelChange)="updateField('NAMEDMIN', $event)"
+               [disabled]="!editable()" />
+      </div>
+
+      <!-- Phones -->
+      <div class="f-grid">
+        <div class="f-field field-tel">
+          <label>الهاتف</label>
+          <input type="text" class="f-input" dir="ltr" maxlength="9"
+                 [ngModel]="form().TEL"
+                 (ngModelChange)="updateField('TEL', $event)"
+                 [disabled]="!editable()" />
+        </div>
+        <div class="f-field field-tel">
+          <label aria-hidden="true">&nbsp;</label>
+          <input type="text" class="f-input" dir="ltr" maxlength="9"
+                 [ngModel]="form().TEL2"
+                 (ngModelChange)="updateField('TEL2', $event)"
+                 [disabled]="!editable()" />
+        </div>
+      </div>
+
+      <!-- Memo -->
+      <div class="f-field f-wide">
+        <label>ملاحظة</label>
+        <input type="text" class="f-input" maxlength="300"
+               [ngModel]="form().MEMOH"
+               (ngModelChange)="updateField('MEMOH', $event)"
+               [disabled]="!editable()" />
+      </div>
+
+      <!-- Frozen-account list in the legacy form is TWKFX, not HALL. -->
+      <div class="freeze-row">
+        <label for="party-freeze">تجميد الحساب</label>
+        <select id="party-freeze" class="f-input freeze-select"
+                [ngModel]="form().TWKFX ?? 0"
+                (ngModelChange)="onFreezeChange($event)"
+                [disabled]="!editable()">
+          @for (opt of freezeOptions; track opt.value) {
+            <option [ngValue]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="form-actions-row" dir="ltr" aria-label="أزرار الشاشة">
+        <div class="toolbar-icons">
+          <button class="tb-btn tb-new" type="button" title="F10 جديد"
+                  (click)="onNew()"
+                  [disabled]="!canIns() || editable() || saving() || loading()">
+            <i class="pi pi-plus"></i>
+          </button>
+          <button class="tb-btn tb-save" type="button" title="F10 حفظ"
+                  (click)="onSave()"
+                  [disabled]="!editable() || saving()">
+            <i class="pi pi-save"></i>
+          </button>
+          <button class="tb-btn tb-back" type="button" title="F7 تراجع"
+                  (click)="onCancel()"
+                  [disabled]="!editable() || saving()">
+            <i class="pi pi-replay"></i>
+          </button>
+          <button class="tb-btn tb-edit" type="button" title="F8 تعديل"
+                  (click)="onEdit()"
+                  [disabled]="!canEd() || !hasCurrent() || editable() || saving()">
+            <i class="pi pi-pencil"></i>
+          </button>
+          <button class="tb-btn tb-delete" type="button" title="F6 حذف"
+                  (click)="onDelete()"
+                  [disabled]="!canDe() || !hasCurrent() || editable() || saving()">
+            <i class="pi pi-trash"></i>
+          </button>
+          <button class="tb-btn tb-search" type="button" title="F3 بحث"
+                  (click)="focusSearch()"
+                  [disabled]="!canSar() || saving()">
+            <i class="pi pi-search"></i>
+          </button>
+          <button #legacyPrintButton class="tb-btn tb-print" type="button" [title]="printActionTitle()"
+                  (click)="onPrint()"
+                  [disabled]="!canPr() || saving()">
+            <i class="pi pi-print"></i>
+          </button>
+          <button class="tb-btn tb-exit" type="button" title="ALT+F4 خروج"
+                  (click)="onExit()"
+                  [disabled]="saving()">
+            <i class="pi pi-times-circle"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═════════════════ sidebar (list) ═════════════════ -->
+    <div class="panel list-panel">
+      <div class="list-search">
+        <input class="f-input" placeholder="بحث..."
+               [ngModel]="search()"
+               (ngModelChange)="search.set($event)"
+               (keydown.enter)="onSearch()" />
+      </div>
+      <div class="list-scroll">
+        @if (loading()) {
+          <div class="list-empty"><i class="pi pi-spin pi-spinner"></i></div>
+        } @else if (filtered().length === 0) {
+          <div class="list-empty">لا توجد سجلات</div>
+        } @else {
+          @for (r of filtered(); track trackByNoa($index, r)) {
+            <button type="button" class="list-item"
+                    [class.list-item-active]="r.NOA === selected()"
+                    (click)="openRow(r.NOA)"
+                    [disabled]="editable() || saving()">
+              <span class="li-name">{{ r.NAMEA || '—' }}</span>
+              <span class="li-meta">{{ r.NOYSOFT || r.NOA }}</span>
+            </button>
+          }
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       Audit footer — read-only, matches the legacy footer bar
+       ══════════════════════════════════════════════════════════════ -->
+  <div class="panel audit-panel">
+    <div class="audit-grid">
+      <div class="audit-cell">
+        <label>مدخل الحساب</label>
+        <span class="audit-value">{{ audit().NAMEU_IN ?? (audit().NOUSX ?? '—') }}</span>
+      </div>
+      <div class="audit-cell">
+        <label>تاريخ الإدخال</label>
+        <span class="audit-value">{{ fmtDate(audit().DI) }}</span>
+      </div>
+      <div class="audit-cell">
+        <label>الجهاز المدخل</label>
+        <span class="audit-value">{{ audit().PCI ?? '' }}</span>
+      </div>
+      <div class="audit-cell audit-ned">
+        <label>عدد مرات التعديل</label>
+        <span class="audit-value">{{ audit().NED ?? 0 }}</span>
+      </div>
+
+      <div class="audit-cell">
+        <label>معدل الحساب</label>
+        <span class="audit-value">{{ audit().NAMEU_ED ?? (audit().NOUSXU ?? '—') }}</span>
+      </div>
+      <div class="audit-cell">
+        <label>تاريخ التعديل</label>
+        <span class="audit-value">{{ fmtDate(audit().DE) }}</span>
+      </div>
+      <div class="audit-cell">
+        <label>الجهاز المعدل</label>
+        <span class="audit-value">{{ audit().PCE ?? '' }}</span>
+      </div>
+      <div class="audit-cell"><!-- filler --></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════
+       TYPEA (Category) LOV overlay
+       ══════════════════════════════════════════════════════════════ -->
+  @if (typeaLovOpen()) {
+    <div class="lov-overlay" (click)="closeTypeaLov()">
+      <div class="lov-dialog" (click)="$event.stopPropagation()">
+        <div class="lov-head">
+          <h3>اختيار الفئة</h3>
+          <button type="button" (click)="closeTypeaLov()"><i class="pi pi-times"></i></button>
+        </div>
+        <div class="lov-search">
+          <input class="f-input" placeholder="بحث بالاسم أو الرقم..."
+                 [ngModel]="typeaLovSearch()"
+                 (ngModelChange)="typeaLovSearch.set($event)" />
+        </div>
+        <div class="lov-results">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 90px">الرقم</th>
+                <th>الاسم</th>
+                <th style="width: 60px">الرتبة</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (n of typeaLovFiltered(); track trackByNode($index, n)) {
+                <tr (click)="pickTypea(n)">
+                  <td class="mono">{{ n.NOA }}</td>
+                  <td>{{ n.NAMEA }}</td>
+                  <td class="mono">{{ n.RTBA }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
+</div>

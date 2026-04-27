@@ -1,0 +1,157 @@
+<div class="user-legacy" dir="rtl">
+  <section class="legacy-window" [class.window-busy]="loading() || saving()" aria-label="شاشة بيانات المستخدم">
+    <header class="legacy-titlebar">
+      <span class="title-icon" aria-hidden="true"></span>
+      <span class="title-text">شاشة بيانات المستخدم</span>
+      <button type="button" class="title-close" title="إغلاق الرسائل" (click)="clearMessages()">×</button>
+    </header>
+
+    <div class="legacy-toolbar" dir="ltr" aria-label="شريط أوامر المستخدمين">
+      <button class="tool-btn tool-power" type="button" title="خروج / إلغاء" (click)="editable() ? onCancel() : clearMessages()"></button>
+      <button class="tool-btn tool-lock" type="button" title="صلاحيات" disabled></button>
+      <button class="tool-btn tool-users" type="button" title="إعادة تحميل" (click)="fetchList()" [disabled]="saving() || loading()"></button>
+      <button class="tool-btn tool-delete" type="button" title="F6 حذف" (click)="onDelete()" [disabled]="!canDe() || !hasCurrent() || editable() || saving()"></button>
+      <button class="tool-btn tool-edit" type="button" title="F8 تعديل" (click)="onEdit()" [disabled]="!canEd() || !hasCurrent() || editable() || saving()"></button>
+      <button class="tool-btn tool-back" type="button" title="F7 تراجع" (click)="onCancel()" [disabled]="!editable() || saving()"></button>
+      <button class="tool-btn tool-save" type="button" title="F10 حفظ" (click)="onSave()" [disabled]="!editable() || saving()"></button>
+      <button class="tool-btn tool-new" type="button" title="F2/F10 جديد" (click)="onNew()" [disabled]="!canIns() || editable() || saving() || loading()"></button>
+    </div>
+
+    <div class="legacy-content">
+      @if (err() || info()) {
+        <div class="legacy-message" [class.message-error]="!!err()" [class.message-info]="!err() && !!info()">
+          <span>{{ err() || info() }}</span>
+          <button type="button" (click)="clearMessages()">×</button>
+        </div>
+      }
+
+      <nav class="legacy-tabs" aria-label="تبويبات شاشة المستخدم">
+        <button type="button" class="legacy-tab" [class.active]="activeTab() === 'users'" (click)="activeTab.set('users')">بيانات المستخدمين</button>
+        <button type="button" class="legacy-tab" [class.active]="activeTab() === 'funds'" (click)="activeTab.set('funds')">ربط المستخدمين بالصناديق</button>
+        <button type="button" class="legacy-tab tab-wide" [class.active]="activeTab() === 'costs'" (click)="activeTab.set('costs')">ربط المستخدمين بمراكز التكلفة التابعة</button>
+        <button type="button" class="legacy-tab" [class.active]="activeTab() === 'other'" (click)="activeTab.set('other')">صلاحيات اخرى</button>
+      </nav>
+
+      <div class="tab-workspace">
+        @if (activeTab() === 'users') {
+          <div class="users-grid-shell">
+            <div class="users-grid-scroll">
+              <table class="users-grid" aria-label="جدول بيانات المستخدمين">
+                <colgroup>
+                  <col class="col-nou" />
+                  <col class="col-name" />
+                  <col class="col-pass" />
+                  <col class="col-admin" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>رقم المستخدم</th>
+                    <th>اسم المستخدم</th>
+                    <th>كلمة المرور</th>
+                    <th>مسئول</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @if (mode() === 'new') {
+                    <tr class="grid-row edit-row current-row">
+                      <td class="cell-num">
+                        <input class="cell-input num-input" type="number" dir="ltr" min="1" max="99"
+                               [ngModel]="form().NOU"
+                               (ngModelChange)="updateField('NOU', +$event || null)" />
+                      </td>
+                      <td>
+                        <input class="cell-input" type="text" maxlength="60"
+                               [ngModel]="form().NAMEU"
+                               (ngModelChange)="updateField('NAMEU', $event)" />
+                      </td>
+                      <td>
+                        <input class="cell-input pass-input" type="password" dir="ltr" maxlength="20"
+                               [ngModel]="form().PASS"
+                               (ngModelChange)="updateField('PASS', $event)" />
+                      </td>
+                      <td class="cell-check">
+                        <input type="checkbox" [ngModel]="form().STATU === 1"
+                               (ngModelChange)="updateField('STATU', $event ? 1 : 0)" />
+                      </td>
+                    </tr>
+                  }
+
+                  @if (loading() && mode() !== 'new') {
+                    <tr class="grid-row muted-row">
+                      <td colspan="4">جاري تحميل بيانات المستخدمين...</td>
+                    </tr>
+                  } @else {
+                    @for (r of filtered(); track trackByNou($index, r)) {
+                      <tr class="grid-row"
+                          [class.current-row]="r.NOU === visualSelected()"
+                          [class.loaded-row]="r.NOU === selected()"
+                          [class.edit-row]="r.NOU === selected() && mode() === 'edit'"
+                          (click)="selectRow(r)">
+                        <td class="cell-num">
+                          @if (r.NOU === selected() && mode() === 'edit') {
+                            <input class="cell-input num-input" type="number" dir="ltr" [ngModel]="form().NOU" disabled />
+                          } @else {
+                            <span>{{ r.NOU }}</span>
+                          }
+                        </td>
+                        <td class="cell-name">
+                          @if (r.NOU === selected() && mode() === 'edit') {
+                            <input class="cell-input" type="text" maxlength="60"
+                                   [ngModel]="form().NAMEU"
+                                   (ngModelChange)="updateField('NAMEU', $event)" />
+                          } @else {
+                            <span>{{ r.NAMEU || '' }}</span>
+                          }
+                        </td>
+                        <td class="cell-pass" dir="ltr">
+                          @if (r.NOU === selected() && mode() === 'edit') {
+                            <input class="cell-input pass-input" type="password" dir="ltr" maxlength="20"
+                                   placeholder="**********"
+                                   [ngModel]="form().PASS"
+                                   (ngModelChange)="updateField('PASS', $event)" />
+                          } @else {
+                            <span>{{ displayPassword(r) }}</span>
+                          }
+                        </td>
+                        <td class="cell-check">
+                          @if (r.NOU === selected() && mode() === 'edit') {
+                            <input type="checkbox" [ngModel]="form().STATU === 1"
+                                   (ngModelChange)="updateField('STATU', $event ? 1 : 0)" />
+                          } @else {
+                            <input type="checkbox" [checked]="r.STATU === 1" disabled />
+                          }
+                        </td>
+                      </tr>
+                    }
+                  }
+
+                  @for (_ of blankRows; track $index) {
+                    <tr class="grid-row blank-row">
+                      <td></td>
+                      <td></td>
+                      <td></td>
+                      <td class="cell-check"><input type="checkbox" disabled /></td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+
+            <div class="grid-footer-line">
+              <label class="any-search-option">
+                <input type="checkbox"
+                       [ngModel]="form().USX === 1"
+                       (ngModelChange)="updateField('USX', $event ? 1 : 0)"
+                       [disabled]="!editable()" />
+                <span>تفعيل خيار البحث عن اي حرف من النص لهذا المستخدم</span>
+              </label>
+              <input class="orphan-check" type="checkbox" disabled />
+            </div>
+          </div>
+        } @else {
+          <div class="legacy-empty-tab" aria-hidden="true"></div>
+        }
+      </div>
+    </div>
+  </section>
+</div>

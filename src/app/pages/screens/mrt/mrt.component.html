@@ -1,0 +1,103 @@
+﻿<div class="mrt-legacy" dir="rtl">
+  <section class="mrt-window" aria-label="شاشة بيانات مراكز التكلفة">
+    <header class="mrt-titlebar" dir="ltr">
+      <span class="window-icon" aria-hidden="true"></span>
+      <h2>شاشة بيانات مراكز التكلفة</h2>
+      <button type="button" class="window-close" title="خروج" (click)="onExit()" [disabled]="saving()">×</button>
+    </header>
+
+    @if (err() || info()) {
+      <div class="msg-bar" [class.msg-error]="!!err()" [class.msg-info]="!err() && !!info()">
+        <span>{{ err() || info() }}</span>
+        <button type="button" class="msg-close" (click)="clearMessages()">×</button>
+      </div>
+    }
+
+    <div class="toolbar-frame" dir="ltr" aria-label="أوامر الشاشة">
+      <button class="tb-btn tb-exit" type="button" title="خروج"
+              (click)="onExit()" [disabled]="saving()">
+        <span>خروج</span>
+      </button>
+      <button class="tb-btn tb-delete" type="button" title="حذف"
+              (click)="onDelete()" [disabled]="!canDe() || !hasCurrent() || editable() || saving()">
+        <span>حذف</span>
+      </button>
+      <button class="tb-btn tb-edit" type="button" title="تعديل"
+              (click)="onEdit()" [disabled]="!canEd() || !hasCurrent() || editable() || saving()">
+        <span>تعديل</span>
+      </button>
+      <button class="tb-btn tb-back" type="button" title="تراجع"
+              (click)="onCancel()" [disabled]="!editable() || saving()">
+        <span>تراجع</span>
+      </button>
+      <button class="tb-btn tb-save" type="button" title="حفظ"
+              (click)="onSave()" [disabled]="!editable() || saving()">
+        <span>حفظ</span>
+      </button>
+      <button class="tb-btn tb-new" type="button" title="جديد"
+              (click)="onNew()" [disabled]="!canIns() || editable() || saving() || loading()">
+        <span>جديد</span>
+      </button>
+    </div>
+
+    <div class="mrt-body">
+      <div class="form-frame">
+        <label class="field field-no">
+          <span>رقم المركز</span>
+          <input type="number" class="legacy-input" dir="ltr" min="1"
+                 [ngModel]="form().NOS"
+                 (ngModelChange)="updateField('NOS', +$event || null)"
+                 [disabled]="mode() !== 'new'" />
+        </label>
+
+        <label class="field field-name">
+          <span>اسم مركز التكلفة</span>
+          <input type="text" class="legacy-input" maxlength="60"
+                 [ngModel]="form().NAMEM"
+                 (ngModelChange)="updateField('NAMEM', $event)"
+                 [disabled]="!editable()" />
+        </label>
+
+        <label class="legacy-check">
+          <input type="checkbox"
+                 [ngModel]="form().DF === 1"
+                 (ngModelChange)="onDefaultChange($event)"
+                 [disabled]="!editable()" />
+          <span>افتراضي للمخزن</span>
+        </label>
+      </div>
+
+      <div class="grid-scroll">
+        <table class="legacy-grid" aria-label="مراكز التكلفة">
+          <colgroup>
+            <col class="col-no" />
+            <col class="col-name" />
+            <col class="col-default" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th>رقم المركز</th>
+              <th>اسم مركز التكلفة</th>
+              <th>افتراضي</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (loading()) {
+              <tr><td class="grid-state" colspan="3">جاري تحميل البيانات...</td></tr>
+            } @else if (filtered().length === 0) {
+              <tr><td class="grid-state" colspan="3">لا توجد مراكز</td></tr>
+            } @else {
+              @for (r of filtered(); track trackByNos($index, r)) {
+                <tr class="data-row" [class.row-current]="r.NOS === selected()" (click)="openRow(r.NOS)">
+                  <td class="num-cell">{{ r.NOS }}</td>
+                  <td>{{ r.NAMEM || '-' }}</td>
+                  <td class="check-cell">{{ r.DF === 1 ? '✓' : '' }}</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+</div>

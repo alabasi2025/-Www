@@ -1,0 +1,9 @@
+:host {
+  display: block;
+}
+
+.legacy-data-grid {
+  border: 1px solid var(--legacy-panel-border);
+  background: #fff;
+  overflow: auto;
+}

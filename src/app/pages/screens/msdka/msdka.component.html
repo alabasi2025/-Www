@@ -1,0 +1,90 @@
+<div class="msdka-legacy" dir="rtl">
+  <app-legacy-status-bar [error]="err()" [info]="info()" (dismiss)="clearMessages()" />
+
+  <app-legacy-toolbar
+    screen="MSDKA"
+    [mode]="'browse'"
+    [saving]="saving()"
+    title="مصادقة الحسابات"
+    [actions]="['exit','save','refresh']"
+    [enabledRules]="{
+      exit: !saving(),
+      save: canEd() && !saving(),
+      refresh: !saving()
+    }"
+    (action)="onToolbarAction($event)">
+    <div class="legacy-toolbar-nav">
+      <input type="search" class="legacy-search" placeholder="بحث بالاسم أو الرقم..."
+        [ngModel]="search()" (ngModelChange)="search.set($event)" />
+      <span class="legacy-rec">{{ filteredAccounts().length }} حساب | {{ selectedCount() }} محدد</span>
+    </div>
+  </app-legacy-toolbar>
+
+  <div class="legacy-frame">
+    <!-- Filters -->
+    <div class="msdka-filters">
+      <div class="msdka-filter-row">
+        <label>تصفية حسب النوع</label>
+        <select [ngModel]="filterTypea()" (ngModelChange)="filterTypea.set($event === '' ? null : +$event)">
+          <option value="">الكل</option>
+          @for (t of typeaOptions(); track t) {
+            <option [value]="t">{{ t }}</option>
+          }
+        </select>
+      </div>
+      <div class="msdka-filter-row">
+        <label>
+          <input type="checkbox" [ngModel]="showOnlySelected()" (ngModelChange)="showOnlySelected.set(!!$event)" />
+          عرض المحدد فقط
+        </label>
+      </div>
+      <div class="msdka-filter-row">
+        <button class="msdka-btn" (click)="selectAll()" [disabled]="saving()">تحديد الكل</button>
+        <button class="msdka-btn" (click)="deselectAll()" [disabled]="saving()">إلغاء الكل</button>
+      </div>
+      @if (cutoffDate()) {
+        <div class="msdka-filter-row">
+          <label>آخر حركة: <strong>{{ cutoffDate() }}</strong></label>
+        </div>
+      }
+    </div>
+
+    <!-- Account table -->
+    <div class="msdka-grid-wrap">
+      <table class="legacy-grid">
+        <thead>
+          <tr>
+            <th style="width:40px">✓</th>
+            <th style="width:90px">رقم الحساب</th>
+            <th>اسم الحساب</th>
+            <th style="width:60px">النوع</th>
+            <th style="width:60px">العملة</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (a of filteredAccounts(); track a.NOA) {
+            <tr [class.selected]="(a.MSDKA ?? 0) > 0" (click)="toggleMsdka(a.NOA)">
+              <td style="text-align:center">
+                <input type="checkbox" [checked]="(a.MSDKA ?? 0) > 0"
+                  (change)="toggleMsdka(a.NOA)" [disabled]="!canEd()" />
+              </td>
+              <td class="mono">{{ a.NOA }}</td>
+              <td>{{ a.NAMEA }}</td>
+              <td class="mono">{{ a.TYPEA }}</td>
+              <td class="mono">{{ a.AMLHH || 1 }}</td>
+            </tr>
+          }
+          @if (!filteredAccounts().length) {
+            <tr><td colspan="5" class="empty">لا توجد حسابات</td></tr>
+          }
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Summary -->
+    <div class="msdka-summary">
+      <span>إجمالي الحسابات: <strong>{{ filteredAccounts().length }}</strong></span>
+      <span>محدد للمصادقة: <strong>{{ selectedCount() }}</strong></span>
+    </div>
+  </div>
+</div>

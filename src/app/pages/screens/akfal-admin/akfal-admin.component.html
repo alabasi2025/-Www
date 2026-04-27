@@ -1,0 +1,67 @@
+<div class="akfal-root" dir="rtl">
+  <div class="akfal-window" role="dialog" aria-label="شاشة معالجة اقفالات النظام">
+    <div class="akfal-titlebar">
+      <span class="akfal-icon" aria-hidden="true"></span>
+      <span class="akfal-title">شاشة معالجة اقفالات النظام</span>
+      <button type="button" class="akfal-close" title="إغلاق" (click)="onExit()">×</button>
+    </div>
+
+    <app-legacy-status-bar
+      [error]="err()"
+      [info]="info()"
+      (dismiss)="clearMessages()" />
+
+    <div class="akfal-body">
+      <div class="akfal-row">
+        <button type="button" class="lock-button" title="فحص اقفال اليوم" (click)="runLegacyAction('day')" [disabled]="saving()">
+          <span aria-hidden="true"></span>
+        </button>
+        <input class="legacy-input day-input"
+               type="text"
+               [ngModel]="dayDate()"
+               (ngModelChange)="dayDate.set($event)"
+               [disabled]="saving()" />
+        <label>اقفال والغاء اقفال يوم</label>
+      </div>
+
+      <div class="akfal-row">
+        <button type="button" class="lock-button" title="فحص اقفال الشهر" (click)="runLegacyAction('month')" [disabled]="saving()">
+          <span aria-hidden="true"></span>
+        </button>
+        <input class="legacy-input month-input"
+               type="text"
+               [ngModel]="month()"
+               (ngModelChange)="month.set($event)"
+               [disabled]="saving()" />
+        <input class="legacy-input month-year-input"
+               type="text"
+               [value]="month() ? (activeYear() || 2023) : ''"
+               disabled />
+        <label>اقفال والغاء اقفال شهر</label>
+      </div>
+
+      <div class="akfal-row year-row">
+        <button type="button" class="lock-button" title="فحص اقفال السنة" (click)="runLegacyAction('year')" [disabled]="saving()">
+          <span aria-hidden="true"></span>
+        </button>
+        <input class="legacy-input year-input"
+               type="text"
+               [value]="activeYear() || 2023"
+               disabled />
+        <label>اقفال السنة المالية</label>
+        <label class="stock-close">
+          <input type="checkbox" />
+          <span>اقفال مخزون السنة المالية</span>
+        </label>
+      </div>
+    </div>
+
+    @if (checks().length) {
+      <div class="akfal-checks">
+        @for (check of checks(); track check.label) {
+          <span [class.fail]="!check.pass">{{ check.label }}</span>
+        }
+      </div>
+    }
+  </div>
+</div>

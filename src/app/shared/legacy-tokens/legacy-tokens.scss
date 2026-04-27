@@ -1,0 +1,52 @@
+:root {
+  --legacy-window-bg: #a9c8e6;
+  --legacy-panel-bg: #e7eff7;
+  --legacy-panel-border: #7a9bbc;
+  --legacy-toolbar-bg: #a9c8e6;
+  --legacy-input-bg: #efefef;
+  --legacy-input-border: #7f8f9f;
+  --legacy-input-focus: #244d78;
+  --legacy-disabled-bg: #e8e8e8;
+  --legacy-disabled-fg: #1f1f1f;
+  --legacy-text-primary: #0a2742;
+  --legacy-text-muted: #5a6879;
+  --legacy-danger: #b21b1b;
+  --legacy-success: #21613b;
+  --legacy-radius-sm: 2px;
+  --legacy-radius-md: 6px;
+  --legacy-control-height: 24px;
+  --legacy-font-family: Tahoma, Arial, sans-serif;
+  --legacy-font-size: 12px;
+}
+
+@mixin legacy-panel {
+  border: 1px solid var(--legacy-panel-border);
+  background: var(--legacy-panel-bg);
+}
+
+@mixin legacy-input {
+  height: var(--legacy-control-height);
+  border: 1px solid var(--legacy-input-border);
+  background: var(--legacy-input-bg);
+  color: var(--legacy-disabled-fg);
+  font-family: var(--legacy-font-family);
+  font-size: var(--legacy-font-size);
+}
+
+@mixin legacy-toolbar-button {
+  width: 39px;
+  height: 31px;
+  border: 1px solid #7f7f7f;
+  background-color: #ececec;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 18px 18px;
+}
+
+.legacy-token-panel {
+  @include legacy-panel;
+}
+
+.legacy-token-input {
+  @include legacy-input;
+}

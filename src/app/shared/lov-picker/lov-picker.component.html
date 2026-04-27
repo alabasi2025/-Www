@@ -1,0 +1,105 @@
+﻿@if (open()) {
+  <div class="lov-backdrop" (click)="onBackdrop()" (keydown)="onEscape($event)" tabindex="-1">
+    <div class="lov-dialog" [class.lov-dialog-legacy]="legacy()" (click)="$event.stopPropagation()" [attr.dir]="legacy() ? 'ltr' : 'rtl'">
+      @if (!legacy()) {
+        <div class="lov-header">
+          <span><i class="pi pi-book"></i> {{ title() }}</span>
+          <span class="lov-count">{{ rowCount() }} نتيجة</span>
+          <button type="button" class="lov-close" (click)="onBackdrop()" aria-label="إغلاق">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+
+        <div class="lov-search">
+          <i class="pi pi-search"></i>
+          <input
+            type="text"
+            [placeholder]="placeholder()"
+            [ngModel]="query()"
+            (ngModelChange)="onQueryChange($event)"
+            class="lov-search-input"
+            autofocus />
+        </div>
+
+        <div class="lov-list">
+          @if (loading()) {
+            <div class="lov-loader">
+              <i class="pi pi-spin pi-spinner"></i> جاري البحث...
+            </div>
+          } @else if (results().length === 0) {
+            <div class="lov-empty">لا نتائج - ابحث بحرف أو رقم</div>
+          } @else {
+            @for (item of results(); track item.NOA) {
+              <div class="lov-row" (click)="choose(item)">
+                <span class="lov-noa">{{ item.NOA }}</span>
+                <span class="lov-name">{{ item.NAMEA }}</span>
+                @if (item.AHSAR) {
+                  <span class="lov-ahsar" title="الاختصار">{{ item.AHSAR }}</span>
+                }
+                @if (item.NOAML > 1) {
+                  <span class="lov-cur" title="عملة">#{{ item.NOAML }}</span>
+                }
+              </div>
+            }
+          }
+        </div>
+      } @else {
+        <div class="legacy-title">{{ title() }}</div>
+
+        <div class="legacy-search-row">
+          <input
+            type="text"
+            class="legacy-search-input"
+            [ngModel]="query()"
+            (ngModelChange)="onQueryChange($event)"
+            (keydown)="onQueryKeydown($event)"
+            placeholder="البحث عن حساب"
+            autofocus />
+          <span class="legacy-find-label">Find</span>
+          <button type="button" class="legacy-find-btn" (click)="onFind()">Find</button>
+        </div>
+
+        <div class="legacy-grid-wrap">
+          <table class="legacy-grid-table">
+            <thead>
+              <tr>
+                <th class="c-main">الحساب الرئيسي</th>
+                <th class="c-cur">عملة الحساب</th>
+                <th class="c-no">رقم الحساب</th>
+                <th class="c-name">اسم الحساب</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (loading()) {
+                <tr><td colspan="4" class="legacy-msg">جاري البحث...</td></tr>
+              } @else if (results().length === 0) {
+                <tr><td colspan="4" class="legacy-msg">لا توجد نتائج</td></tr>
+              } @else {
+                @for (item of results(); track item.NOA) {
+                  <tr
+                    [class.selected]="isSelected(item)"
+                    (click)="choose(item)"
+                    (dblclick)="pick(item)">
+                    <td class="c-main">{{ item.AHSAR || '...' }}</td>
+                    <td class="c-cur">{{ item.NOAML === 1 ? 'يمني' : ('#' + item.NOAML) }}</td>
+                    <td class="c-no mono">{{ item.NOA }}</td>
+                    <td class="c-name">{{ item.NAMEA || '...' }}</td>
+                  </tr>
+                }
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <div class="legacy-footer">
+          <span class="legacy-count-text">Choices in list: {{ rowCount() }}</span>
+          <div class="legacy-actions">
+            <button type="button" class="btn-cancel" (click)="onBackdrop()">Cancel</button>
+            <button type="button" class="btn-ok" (click)="confirmPick()" [disabled]="!selected()">OK</button>
+            <button type="button" class="btn-find" (click)="onFind()">Find</button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+}

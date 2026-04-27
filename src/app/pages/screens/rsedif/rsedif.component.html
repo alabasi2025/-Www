@@ -1,0 +1,250 @@
+﻿<div class="rsedif-root" dir="rtl">
+  <section class="legacy-window" [class.is-loading]="loading()">
+    <header class="legacy-titlebar">
+      <div class="legacy-icon" aria-hidden="true"></div>
+      <div class="legacy-title">شاشة ادخال الارصدة الافتتاحية للحسابات</div>
+      <div class="legacy-controls" aria-hidden="true">
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+    </header>
+
+    <div class="legacy-body">
+      <div class="top-strip">
+        <label class="field number-field">
+          <span>رقم القيد</span>
+          <input [value]="master()['NOK'] || master()['NOSON'] || 1" disabled />
+        </label>
+
+        <label class="field date-field">
+          <span>تاريخ القيد</span>
+          <input
+            type="text"
+            inputmode="numeric"
+            [ngModel]="legacyDate(master()['DATES'])"
+            (ngModelChange)="patchLegacyDate($event)"
+            [disabled]="!editable()" />
+        </label>
+
+        <label class="field memo-field">
+          <span>البيان</span>
+          <input
+            [ngModel]="master()['MEMOS'] || ''"
+            (ngModelChange)="patchMaster({ MEMOS: $event })"
+            [disabled]="!editable()" />
+        </label>
+
+        <label class="legacy-check wait-check">
+          <input
+            type="checkbox"
+            [ngModel]="num(master()['KDANT']) > 0"
+            (ngModelChange)="patchMaster({ KDANT: $event ? 1 : 0 })"
+            [disabled]="!editable()" />
+          <span>قيد تحت الانتظار</span>
+        </label>
+
+        <label class="legacy-check rate-check">
+          <input
+            type="checkbox"
+            [ngModel]="updateRateOnSave()"
+            (ngModelChange)="updateRateOnSave.set($event)"
+            [disabled]="!editable()" />
+          <span>تحديث سعر الصرف عند الحفظ بسعر الصرف الحالي</span>
+        </label>
+      </div>
+
+      <div class="grid-shell">
+        <div class="grid-scroll" #gridScroll>
+          <table class="legacy-grid" aria-label="تفاصيل الأرصدة الافتتاحية">
+            <colgroup>
+              <col class="col-main" />
+              <col class="col-no" />
+              <col class="col-name" />
+              <col class="col-cur" />
+              <col class="col-rate" />
+              <col class="col-local" />
+              <col class="col-local" />
+              <col class="col-foreign" />
+              <col class="col-foreign" />
+            </colgroup>
+            <thead>
+              <tr>
+                <th>الحساب الرئيسي</th>
+                <th>رقم الحساب</th>
+                <th>اسم الحساب</th>
+                <th>العملة</th>
+                <th>سعر الصرف</th>
+                <th>مدين محلي</th>
+                <th>دائن محلي</th>
+                <th>مدين اجنبي</th>
+                <th>دائن اجنبي</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of details(); track row._key) {
+                <tr
+                  [class.active]="activeRowIndex() === $index"
+                  [class.has-data]="rowHasData(row)"
+                  (click)="activeRowIndex.set($index)">
+                  <td>
+                    <input class="cell-input text" [value]="mainAccountName(row)" disabled />
+                  </td>
+                  <td>
+                    <div class="account-cell">
+                      <button
+                        type="button"
+                        class="lov-dot"
+                        title="دليل الحسابات"
+                        (click)="$event.stopPropagation(); openLov($index)"
+                        [disabled]="!editable()">...</button>
+                      <input
+                        class="cell-input num account-no"
+                        type="number"
+                        [ngModel]="row.NOA || ''"
+                        (ngModelChange)="onAccountNoInput($index, $event)"
+                        [disabled]="!editable()" />
+                    </div>
+                  </td>
+                  <td>
+                    <input
+                      class="cell-input name"
+                      [ngModel]="row.NAMEA || ''"
+                      (ngModelChange)="patchRow($index, { NAMEA: $event })"
+                      [disabled]="!editable()" />
+                  </td>
+                  <td>
+                    <input class="cell-input text center" [value]="currencyName(row.NOAML)" disabled />
+                  </td>
+                  <td>
+                    <input
+                      class="cell-input num"
+                      type="number"
+                      step="0.0001"
+                      [ngModel]="displayRate(row)"
+                      (ngModelChange)="onRateInput($index, $event)"
+                      [disabled]="!editable() || num(row.NOAML) <= 1" />
+                  </td>
+                  <td>
+                    <input
+                      class="cell-input num"
+                      type="number"
+                      step="0.01"
+                      [ngModel]="amountInputValue(row.MDIN)"
+                      (ngModelChange)="onDebitInput($index, $event)"
+                      [disabled]="!editable()" />
+                  </td>
+                  <td>
+                    <input
+                      class="cell-input num"
+                      type="number"
+                      step="0.01"
+                      [ngModel]="amountInputValue(row.DAN)"
+                      (ngModelChange)="onCreditInput($index, $event)"
+                      [disabled]="!editable()" />
+                  </td>
+                  <td>
+                    <input
+                      class="cell-input num"
+                      type="number"
+                      step="0.01"
+                      [ngModel]="amountInputValue(row.MDINAML)"
+                      (ngModelChange)="onForeignDebitInput($index, $event)"
+                      [disabled]="!editable() || num(row.NOAML) <= 1" />
+                  </td>
+                  <td>
+                    <input
+                      class="cell-input num"
+                      type="number"
+                      step="0.01"
+                      [ngModel]="amountInputValue(row.DANAML)"
+                      (ngModelChange)="onForeignCreditInput($index, $event)"
+                      [disabled]="!editable() || num(row.NOAML) <= 1" />
+                  </td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td class="post-state" colspan="2">{{ postedLabel() }}</td>
+                <td class="diff-label">الفارق</td>
+                <td class="diff-value" [class.ok]="balanced()">{{ difference() | number:'1.2-2' }}</td>
+                <td class="total-label">الإجمالي</td>
+                <td>{{ totalMdin() | number:'1.2-2' }}</td>
+                <td>{{ totalDan() | number:'1.2-2' }}</td>
+                <td>{{ totalMdinAml() | number:'1.2-2' }}</td>
+                <td>{{ totalDanAml() | number:'1.2-2' }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <div class="bottom-strip">
+        <div class="audit-fields">
+          <label>
+            <span>مدخل القيد</span>
+            <input [value]="master()['NOUSX'] || ''" disabled />
+          </label>
+          <label>
+            <span>معدل القيد</span>
+            <input [value]="master()['NOUSXU'] || ''" disabled />
+          </label>
+        </div>
+
+        <div class="legacy-toolbar" role="toolbar" aria-label="أوامر الشاشة">
+          <button type="button" class="tool-btn power" title="إلغاء / خروج" (click)="onCancel()" [disabled]="saving()">
+            <i class="pi pi-power-off"></i>
+          </button>
+          <button type="button" class="tool-btn print" title="طباعة" (click)="onPrint()" [disabled]="!master()['NOS'] || editable()">
+            <i class="pi pi-print"></i>
+          </button>
+          <button type="button" class="tool-btn search" title="دليل الحسابات" (click)="openActiveLov()" [disabled]="!editable()">
+            <i class="pi pi-search"></i>
+          </button>
+          <button type="button" class="tool-btn refresh" title="تحديث" (click)="fetchList()" [disabled]="saving()">
+            <i class="pi pi-refresh"></i>
+          </button>
+          <button type="button" class="tool-btn save" title="حفظ" (click)="onSave()" [disabled]="!canSave() || saving()">
+            <i class="pi pi-save"></i>
+          </button>
+          <button type="button" class="tool-btn edit" title="تعديل" (click)="onEdit()" [disabled]="!canEd() || editable() || !master()['NOS'] || num(master()['MRHL']) === 0">
+            <i class="pi pi-pencil"></i>
+          </button>
+          <button type="button" class="tool-btn add-row" title="إضافة سطر" (click)="addRow()" [disabled]="!editable()">
+            <i class="pi pi-plus"></i>
+          </button>
+          <button type="button" class="tool-btn new-row" title="جديد" (click)="onNew()" [disabled]="!canIns() || editable() || saving()">
+            <i class="pi pi-file-plus"></i>
+          </button>
+        </div>
+      </div>
+
+      @if (err() || info()) {
+        <div class="legacy-message" [class.error]="!!err()" [class.info]="!err() && !!info()">
+          <span>{{ err() || info() }}</span>
+          <div class="legacy-badges">
+            @for (badge of statusBadges(); track badge.label) {
+              <span [class]="'badge ' + badge.variant">{{ badge.label }}</span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </section>
+
+  <div class="record-bar">
+    <span>Record: {{ currentRecordLabel() }}</span>
+    <button type="button" (click)="navTo('first')" [disabled]="currentIdx() <= 0">|&lt;</button>
+    <button type="button" (click)="navTo(-1)" [disabled]="currentIdx() <= 0">&lt;</button>
+    <button type="button" (click)="navTo(1)" [disabled]="currentIdx() >= filteredRows().length - 1">&gt;</button>
+    <button type="button" (click)="navTo('last')" [disabled]="currentIdx() >= filteredRows().length - 1">&gt;|</button>
+  </div>
+
+  <app-lov-picker
+    [open]="lovOpen() !== null"
+    [legacy]="true"
+    title="دليل الحسابات"
+    (select)="pickAccount($event)"
+    (close)="lovOpen.set(null)" />
+</div>

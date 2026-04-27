@@ -1,0 +1,74 @@
+﻿<div class="tel-root" dir="rtl">
+  <header class="tel-titlebar" dir="ltr">
+    <span class="window-icon" aria-hidden="true"></span>
+    <h2>فريق الدعم الفني</h2>
+    <button type="button" class="window-close" title="خروج" (click)="onExit()" [disabled]="saving()">×</button>
+  </header>
+
+  <app-legacy-toolbar
+    screen="TEL.FMX"
+    [permissionModel]="permissionModel()"
+    mode="browse"
+    [saving]="saving()"
+    [hasCurrent]="true"
+    title="فريق الدعم الفني"
+    [countBadge]="contacts().length + ' جهات'"
+    [actions]="['exit','search','refresh','post']"
+    [enabledRules]="{ exit: !saving(), search: !saving(), refresh: !saving(), post: !saving() }"
+    (action)="onToolbarAction($event)">
+    <div class="tel-toolbar-tools">
+      <button type="button" (click)="actionPlan()" [disabled]="saving()" title="F10 تحديث قاعدة البيانات">تحديث قاعدة البيانات</button>
+    </div>
+  </app-legacy-toolbar>
+
+  <app-legacy-status-bar [error]="err()" [info]="info()" [badges]="statusBadges()" (dismiss)="clearMessages()" />
+
+  <div class="tel-layout">
+    <section class="tel-panel contacts-panel">
+      <div class="panel-title">فريق الدعم الفني</div>
+      <div class="contact-grid">
+        @if (loading()) {
+          <div class="empty">جاري التحميل...</div>
+        } @else {
+          @for (contact of contacts(); track contact.name) {
+            <article class="contact-card">
+              <label>الاسم</label>
+              <strong>{{ contact.name }}</strong>
+              <label>المحافظة</label>
+              <span>{{ contact.city || '-' }}</span>
+              <label>العمل</label>
+              <span>{{ contact.work }}</span>
+              <label>التلفون</label>
+              <span dir="ltr">{{ contact.phone }}</span>
+            </article>
+          }
+        }
+      </div>
+    </section>
+
+    <aside class="tel-panel ops-panel">
+      <div class="panel-title">تحديثات TEL القديمة</div>
+      <div class="ops-form">
+        <label>
+          <span>العملية</span>
+          <select [ngModel]="selectedAction()" (ngModelChange)="selectedAction.set($event)" [disabled]="saving()">
+            @for (action of actions(); track action.id) {
+              <option [value]="action.id">{{ action.label }}</option>
+            }
+          </select>
+        </label>
+        <button type="button" (click)="actionPlan()" [disabled]="saving()" title="F10 عرض خطة التنفيذ">عرض خطة التنفيذ</button>
+      </div>
+      <div class="danger-note">يجب خروج جميع المستخدمين من الشاشات المفتوحة قبل تحديث قاعدة البيانات</div>
+      <div class="status-box">
+        <span>NOCOPY: {{ titl()['NOCOPY'] || 0 }}</span>
+        <span>NOCOPYX: {{ titl()['NOCOPYX'] || 0 }}</span>
+        <span>NOCOPY2: {{ titl()['NOCOPY2'] || 0 }}</span>
+        <span>T_SMS: {{ titl()['T_SMS'] || 0 }}</span>
+      </div>
+    </aside>
+  </div>
+</div>
+
+
+

@@ -1,0 +1,474 @@
+<div class="sndkd2-root" dir="rtl">
+
+  <!-- â•گâ•گ TOOLBAR â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ -->
+  <app-legacy-toolbar
+    [screen]="screenCode"
+    [mode]="mode()"
+    [saving]="saving()"
+    [posted]="postingLocked()"
+    [hasCurrent]="!!master().NOS"
+    title="قيد تحويل"
+    icon="pi-arrow-right-arrow-left"
+    [countBadge]="rows().length + ' قيد'"
+    [actions]="['new','edit','delete','post','unpost','print','save','cancel','search','refresh','exit']"
+    [enabledRules]="{
+      new: canIns() && !editable() && !saving(),
+      edit: canEd() && !!master().NOS && !editable() && !postingLocked() && !saving(),
+      delete: canDe() && !!master().NOS && !editable() && !postingLocked() && !saving(),
+      post: canEd() && manualPosting() && !!master().NOS && !editable() && !posted() && !saving(),
+      unpost: canEd() && manualPosting() && !!master().NOS && !editable() && posted() && !saving(),
+      print: canPr() && !!master().NOS && !editable() && !saving(),
+      save: editable() && !saving(),
+      cancel: editable() && !saving(),
+      search: !saving(),
+      refresh: !saving(),
+      exit: !saving()
+    }"
+    (action)="onToolbarAction($event)">
+
+    @if (master().NOS && rows().length > 1) {
+      <div class="tb-nav">
+        <button class="nav-btn" (click)="navTo('first')" [disabled]="currentIdx()<=0" title="الأول">
+          <i class="pi pi-step-backward"></i>
+        </button>
+        <button class="nav-btn" (click)="navTo(-1)" [disabled]="currentIdx()<=0" title="السابق">
+          <i class="pi pi-caret-right"></i>
+        </button>
+        <span class="nav-pos">{{ currentIdx()+1 }} / {{ rows().length }}</span>
+        <button class="nav-btn" (click)="navTo(1)" [disabled]="currentIdx()>=rows().length-1" title="التالي">
+          <i class="pi pi-caret-left"></i>
+        </button>
+        <button class="nav-btn" (click)="navTo('last')" [disabled]="currentIdx()>=rows().length-1" title="الأخير">
+          <i class="pi pi-step-forward"></i>
+        </button>
+      </div>
+    }
+
+    <div class="tb-search">
+      <i class="pi pi-search"></i>
+      <input type="search" placeholder="بحث برقم السند، الحساب، البيان..."
+             [ngModel]="search()" (ngModelChange)="search.set($event)" />
+    </div>
+  </app-legacy-toolbar>
+
+  <!-- â•گâ•گ STATUS STRIP â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ -->
+  <div class="sndkd2-status">
+    <app-legacy-status-bar
+      [error]="err()"
+      [info]="info()"
+      [badges]="statusBadges()"
+      (dismiss)="clearMessages()" />
+  </div>
+
+  <!-- â•گâ•گ BODY â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ -->
+  <div class="sndkd2-body">
+
+    @if (master().NOS || editable()) {
+      <div class="sndkd2-form">
+
+        <!-- â”€â”€ HEADER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+        <div class="sndkd2-header">
+          <div class="hdr-field">
+            <label>مسلسل <small class="hdr-hint" title="أدخل رقماً وضغط Enter للقفز إلى قيد آخر">⌕</small></label>
+            @if (editable()) {
+              <input class="hdr-input hdr-ro" [value]="master().NOSON || '(تلقائي)'" disabled />
+            } @else {
+              <input type="number" class="hdr-input" [value]="master().NOSON ?? ''"
+                     placeholder="رقم السنة" #nosonInput
+                     (keyup.enter)="jumpByNoson(+nosonInput.value)"
+                     title="أدخل رقم مسلسل السنة واضغط Enter" />
+            }
+          </div>
+          <div class="hdr-field">
+            <label>التاريخ</label>
+            <input type="date" class="hdr-input"
+                   [ngModel]="master().DATES ? (asStr(master().DATES) | date:'yyyy-MM-dd') : ''"
+                   (ngModelChange)="patchMaster({ DATES: $event })"
+                   [disabled]="!editable()" />
+          </div>
+          <div class="hdr-field">
+            <label>رقم القيد (NOK)</label>
+            <input class="hdr-input hdr-ro" [value]="master().NOK || '(يظهر بعد الترحيل)'" disabled />
+          </div>
+          <div class="hdr-field">
+            <label>م. تكلفة</label>
+            <input type="number" class="hdr-input"
+                   [ngModel]="master().MRT"
+                   (ngModelChange)="patchMaster({ MRT: +$event || 0 })"
+                   [disabled]="!editable()" />
+          </div>
+          <div class="hdr-field hdr-field-wide">
+            <label>البيان العام</label>
+            <input class="hdr-input" placeholder="وصف مختصر للتحويل"
+                   maxlength="400"
+                   [ngModel]="master().MEMOSA"
+                   (ngModelChange)="patchMaster({ MEMOSA: $event })"
+                   [disabled]="!editable()" />
+          </div>
+        </div>
+
+        <!-- â”€â”€ TWO-SIDES TRANSFER FORM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+        <div class="sndkd2-sides">
+
+          <!-- Debit side (من) -->
+          <section class="side-card side-debit">
+            <header class="side-head">
+              <i class="pi pi-sign-out side-icon side-icon-debit"></i>
+              <h3>الطرف المدين — من</h3>
+              <span class="side-tag">علية</span>
+            </header>
+
+            <div class="side-grid">
+              <div class="side-field side-field-account">
+                <label>الحساب</label>
+                <div class="lov-cell">
+                  <span class="lov-cell-name" [title]="master().NAMEA || ''">
+                    @if (master().NOA) { <strong>{{ master().NOA }}</strong> آ· }
+                    {{ master().NAMEA || '—' }}
+                  </span>
+                  @if (editable()) {
+                    <button class="lov-cell-btn" (click)="openLovFor(1)" type="button" title="اختيار الحساب">
+                      <i class="pi pi-search"></i>
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div class="side-field">
+                <label>العملة (NOAML)</label>
+                <input type="number" min="1"
+                       [ngModel]="master().NOAML"
+                       (ngModelChange)="onCurrencyInput(1, $event)"
+                       [disabled]="!editable()" />
+              </div>
+              <div class="side-field">
+                <label>سعر الصرف</label>
+                <input type="number" step="0.0001" min="0"
+                       [ngModel]="master().SARSF"
+                       (ngModelChange)="onRateInput(1, $event)"
+                       [disabled]="!editable() || master().NOAML === 1" />
+              </div>
+
+              <div class="side-field">
+                <label>المبلغ (أجنبي)</label>
+                <input type="number" step="0.01" min="0"
+                       [ngModel]="master().MDINAML"
+                       (ngModelChange)="onForeignDebitInput($event)"
+                       [disabled]="!editable() || master().NOAML === 1" />
+              </div>
+
+              <div class="side-field">
+                <label>مشروع / مرجع</label>
+                <input type="number"
+                       [ngModel]="master().NOMSRO"
+                       (ngModelChange)="patchMaster({ NOMSRO: +$event || 0 })"
+                       [disabled]="!editable()" />
+              </div>
+
+              <div class="side-field side-field-wide">
+                <label>بيان الطرف المدين</label>
+                <input [ngModel]="master().MEMOSA1"
+                       (ngModelChange)="patchMaster({ MEMOSA1: $event })"
+                       [disabled]="!editable()"
+                       maxlength="1000" />
+              </div>
+            </div>
+          </section>
+
+          <!-- Central amount panel -->
+          <section class="amount-card">
+            <i class="pi pi-arrow-right-arrow-left amount-arrow"></i>
+            <label class="amount-label">مبلغ التحويل (محلي)</label>
+            <input class="amount-input" type="number" step="0.01" min="0"
+                   [ngModel]="master().MDIN"
+                   (ngModelChange)="onAmountInput($event)"
+                   [disabled]="!editable()" />
+            <div class="amount-hint">
+              @if (balanced()) {
+                <span class="ok"><i class="pi pi-check-circle"></i> متوازن</span>
+              } @else {
+                <span class="warn"><i class="pi pi-exclamation-triangle"></i>
+                  فارق: {{ (asNum(master().MDIN) - asNum(master().DAN)) | number:'1.2-2' }}
+                </span>
+              }
+            </div>
+          </section>
+
+          <!-- Credit side (إلى) -->
+          <section class="side-card side-credit">
+            <header class="side-head">
+              <i class="pi pi-sign-in side-icon side-icon-credit"></i>
+              <h3>الطرف الدائن — إلى</h3>
+              <span class="side-tag">له</span>
+            </header>
+
+            <div class="side-grid">
+              <div class="side-field side-field-account">
+                <label>الحساب</label>
+                <div class="lov-cell">
+                  <span class="lov-cell-name" [title]="master().NAMEA2 || ''">
+                    @if (master().NOA2) { <strong>{{ master().NOA2 }}</strong> آ· }
+                    {{ master().NAMEA2 || '—' }}
+                  </span>
+                  @if (editable()) {
+                    <button class="lov-cell-btn" (click)="openLovFor(2)" type="button" title="اختيار الحساب">
+                      <i class="pi pi-search"></i>
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <div class="side-field">
+                <label>العملة (NOAML2)</label>
+                <input type="number" min="1"
+                       [ngModel]="master().NOAML2"
+                       (ngModelChange)="onCurrencyInput(2, $event)"
+                       [disabled]="!editable()" />
+              </div>
+              <div class="side-field">
+                <label>سعر الصرف</label>
+                <input type="number" step="0.0001" min="0"
+                       [ngModel]="master().SARSF2"
+                       (ngModelChange)="onRateInput(2, $event)"
+                       [disabled]="!editable() || master().NOAML2 === 1" />
+              </div>
+
+              <div class="side-field">
+                <label>المبلغ (أجنبي)</label>
+                <input type="number" step="0.01" min="0"
+                       [ngModel]="master().DANAML"
+                       (ngModelChange)="onForeignCreditInput($event)"
+                       [disabled]="!editable() || master().NOAML2 === 1" />
+              </div>
+
+              <div class="side-field">
+                <label>مشروع / مرجع</label>
+                <input type="number"
+                       [ngModel]="master().NOMSRO2"
+                       (ngModelChange)="patchMaster({ NOMSRO2: +$event || 0 })"
+                       [disabled]="!editable()" />
+              </div>
+
+              <div class="side-field side-field-wide">
+                <label>بيان الطرف الدائن</label>
+                <input [ngModel]="master().MEMOSA2"
+                       (ngModelChange)="patchMaster({ MEMOSA2: $event })"
+                       [disabled]="!editable()"
+                       maxlength="1000" />
+              </div>
+            </div>
+          </section>
+
+        </div>
+
+        <!-- â”€â”€ AUDIT CARD â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+        <div class="sndkd2-options">
+          <label class="option-check">
+            <input type="checkbox"
+                   [ngModel]="printAfterSave()"
+                   (ngModelChange)="printAfterSave.set(!!$event)" />
+            طباعة القيد بعد الحفظ
+          </label>
+
+          <div class="rate-warnings">
+            @if (debitRateWarning()) {
+              <div class="rate-warning">
+                <i class="pi pi-exclamation-triangle"></i>
+                <span>{{ debitRateWarning() }}</span>
+              </div>
+            }
+            @if (creditRateWarning()) {
+              <div class="rate-warning">
+                <i class="pi pi-exclamation-triangle"></i>
+                <span>{{ creditRateWarning() }}</span>
+              </div>
+            }
+          </div>
+        </div>
+
+      </div>
+    }
+
+    <!-- Empty state -->
+    @if (!master().NOS && !editable() && !loading()) {
+      <div class="empty-state">
+        <i class="pi pi-arrow-right-arrow-left empty-icon"></i>
+        <p>اختر قيداً من القائمة أو اضغط <strong>جديد</strong> لإنشاء قيد تحويل</p>
+      </div>
+    }
+    @if (loading()) {
+      <div class="empty-state"><i class="pi pi-spin pi-spinner" style="font-size:2rem;color:#1d4ed8"></i></div>
+    }
+
+    <!-- â”€â”€ QUICK LIST â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+    <div class="vouchers-panel">
+      <div class="vp-header">
+        <span><i class="pi pi-list"></i> قائمة قيود التحويل</span>
+        <span class="vp-count">{{ filtered().length }} / {{ rows().length }}</span>
+      </div>
+      <div class="vp-body">
+        <table class="vp-tbl">
+          <thead>
+            <tr>
+              <th>مسلسل</th>
+              <th>التاريخ</th>
+              <th>من</th>
+              <th>إلى</th>
+              <th>المبلغ</th>
+              <th>الحالة</th>
+              <th>البيان</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (r of filtered(); track r.NOS) {
+              <tr (click)="openRow(r.NOS)" [class.vp-row-active]="r.NOS===master().NOS">
+                <td class="td-mono">{{ r.NOSON || r.NOS }}</td>
+                <td>{{ asStr(r.DATES) | date:'dd/MM/yyyy' }}</td>
+                <td class="td-mono">{{ r.NOA }}</td>
+                <td class="td-mono">{{ r.NOA2 }}</td>
+                <td class="td-mono td-num">{{ (r.MDIN || 0) | number:'1.2-2' }}</td>
+                <td>
+                  <span class="badge"
+                        [class.badge-posted]="r.MRHL === 0"
+                        [class.badge-draft]="r.MRHL !== 0">
+                    {{ r.MRHL === 0 ? 'مُرحّل' : 'جديد' }}
+                  </span>
+                </td>
+                <td class="td-memo" [title]="r.MEMOSA">{{ r.MEMOSA }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <app-legacy-audit-footer [record]="masterAsRecord()" />
+
+  </div>
+
+</div>
+
+<!-- â•گâ•گ LOV DIALOG â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ -->
+<app-lov-picker
+  [open]="lovOpen()"
+  [rtba]="5"
+  title="دليل الحسابات"
+  (select)="onLovSelect($event)"
+  (close)="closeLov()" />
+
+<!-- â•گâ•گ ADVANCED SEARCH MODAL â•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گâ•گ -->
+@if (searchOpen()) {
+  <div class="search-backdrop" (click)="closeSearch()">
+    <div class="search-modal" (click)="$event.stopPropagation()" dir="rtl">
+      <div class="search-head">
+        <h3><i class="pi pi-search"></i> بحث متقدم — قيود التحويل</h3>
+        <button class="btn-close" (click)="closeSearch()" title="إغلاق"><i class="pi pi-times"></i></button>
+      </div>
+
+      <div class="search-body">
+        <div class="search-criteria">
+          <div class="sc-field">
+            <label>من تاريخ</label>
+            <input type="date" [ngModel]="searchCriteria().dateFrom"
+                   (ngModelChange)="updateCriterion('dateFrom', $event)" />
+          </div>
+          <div class="sc-field">
+            <label>إلى تاريخ</label>
+            <input type="date" [ngModel]="searchCriteria().dateTo"
+                   (ngModelChange)="updateCriterion('dateTo', $event)" />
+          </div>
+          <div class="sc-field sc-field-wide">
+            <label>البيان يحتوي</label>
+            <input type="text" placeholder="كلمات من البيان..."
+                   [ngModel]="searchCriteria().memo"
+                   (ngModelChange)="updateCriterion('memo', $event)"
+                   (keyup.enter)="executeSearch()" />
+          </div>
+          <div class="sc-field">
+            <label>المبلغ من</label>
+            <input type="number" step="0.01" [ngModel]="searchCriteria().minAmount"
+                   (ngModelChange)="updateCriterion('minAmount', $event)" />
+          </div>
+          <div class="sc-field">
+            <label>المبلغ إلى</label>
+            <input type="number" step="0.01" [ngModel]="searchCriteria().maxAmount"
+                   (ngModelChange)="updateCriterion('maxAmount', $event)" />
+          </div>
+          <div class="sc-field">
+            <label>الحالة</label>
+            <select [ngModel]="searchCriteria().posted"
+                    (ngModelChange)="updateCriterion('posted', $event)">
+              <option value="">(الكل)</option>
+              <option value="1">مُرحّل فقط</option>
+              <option value="0">غير مُرحّل فقط</option>
+            </select>
+          </div>
+          <div class="sc-field">
+            <label>يحوي الحساب</label>
+            <input type="number" placeholder="رقم الحساب (طرف مدين أو دائن)"
+                   [ngModel]="searchCriteria().noa"
+                   (ngModelChange)="updateCriterion('noa', $event)"
+                   (keyup.enter)="executeSearch()" />
+          </div>
+        </div>
+
+        <div class="search-actions">
+          <button class="btn-exec" (click)="executeSearch()" [disabled]="searchBusy()">
+            <i class="pi" [class.pi-search]="!searchBusy()" [class.pi-spin]="searchBusy()" [class.pi-spinner]="searchBusy()"></i>
+            {{ searchBusy() ? 'جاري البحث...' : 'بحث' }}
+          </button>
+          <button class="btn-reset" (click)="resetSearch()" [disabled]="searchBusy()">
+            <i class="pi pi-eraser"></i> مسح
+          </button>
+          <span class="search-count">
+            @if (searchResults().length) { {{ searchResults().length }} نتيجة }
+          </span>
+        </div>
+
+        <div class="search-results">
+          @if (searchResults().length === 0 && !searchBusy()) {
+            <div class="search-empty">
+              <i class="pi pi-inbox"></i>
+              <p>أدخل معايير البحث واضغط "بحث"</p>
+            </div>
+          }
+          @if (searchResults().length > 0) {
+            <table class="search-table">
+              <thead>
+                <tr>
+                  <th>مسلسل</th>
+                  <th>تاريخ</th>
+                  <th>من</th>
+                  <th>إلى</th>
+                  <th>المبلغ</th>
+                  <th>الحالة</th>
+                  <th>البيان</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (r of searchResults(); track r.NOS) {
+                  <tr (dblclick)="pickSearchResult(r.NOS)" tabindex="0"
+                      (keyup.enter)="pickSearchResult(r.NOS)"
+                      title="انقر مرتين للفتح">
+                    <td class="td-mono">{{ r.NOSON || r.NOS }}</td>
+                    <td>{{ asStr(r.DATES) | date:'dd/MM/yyyy' }}</td>
+                    <td class="td-mono">{{ r.NOA }}</td>
+                    <td class="td-mono">{{ r.NOA2 }}</td>
+                    <td class="td-mono td-num">{{ (r.MDIN || 0) | number:'1.2-2' }}</td>
+                    <td>
+                      <span class="badge" [class.badge-posted]="r.MRHL === 0" [class.badge-draft]="r.MRHL !== 0">
+                        {{ r.MRHL === 0 ? 'مُرحّل' : 'جديد' }}
+                      </span>
+                    </td>
+                    <td class="td-memo" [title]="r.MEMOSA">{{ r.MEMOSA }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+}
+

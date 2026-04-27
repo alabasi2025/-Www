@@ -1,0 +1,104 @@
+﻿<div class="ahtsar-legacy" dir="rtl">
+  <header class="ahtsar-titlebar" dir="ltr">
+    <span class="window-icon" aria-hidden="true"></span>
+    <h2>شاشة ادخال قائمة الاختصارات للبيان</h2>
+    <button type="button" class="window-close" title="خروج" (click)="onExit()" [disabled]="saving()">×</button>
+  </header>
+
+  @if (err() || info()) {
+    <div class="msg-bar" [class.msg-error]="!!err()" [class.msg-info]="!err() && !!info()">
+      <span>{{ err() || info() }}</span>
+      <button type="button" class="msg-close" (click)="clearMessages()"><i class="pi pi-times"></i></button>
+    </div>
+  }
+
+  <div class="toolbar-row" dir="ltr">
+    <div class="toolbar-icons">
+      <button class="tb-btn tb-new" type="button" title="جديد"
+              (click)="onNew()" [disabled]="!canIns() || editable() || saving() || loading()">
+        <i class="pi pi-plus"></i>
+      </button>
+      <button class="tb-btn tb-save" type="button" title="حفظ"
+              (click)="onSave()" [disabled]="!editable() || saving()">
+        <i class="pi pi-save"></i>
+      </button>
+      <button class="tb-btn tb-back" type="button" title="تراجع"
+              (click)="onCancel()" [disabled]="!editable() || saving()">
+        <i class="pi pi-replay"></i>
+      </button>
+      <button class="tb-btn tb-edit" type="button" title="تعديل"
+              (click)="onEdit()" [disabled]="!canEd() || !hasCurrent() || selectedIsSystemShortcut() || editable() || saving()">
+        <i class="pi pi-pencil"></i>
+      </button>
+      <button class="tb-btn tb-print" type="button" title="طباعة"
+              (click)="onPrint()" [disabled]="!canPr() || saving() || loading()">
+        <i class="pi pi-print"></i>
+      </button>
+      <button class="tb-btn tb-exit" type="button" title="خروج"
+              (click)="onExit()" [disabled]="saving()">
+        <i class="pi pi-sign-out"></i>
+      </button>
+    </div>
+    <div class="toolbar-title">شاشة إدخال قائمة الاختصارات للبيان</div>
+  </div>
+
+  <div class="body-row">
+    <div class="panel form-panel">
+      <div class="legacy-window-caption">شاشة إدخال قائمة الاختصارات للبيان</div>
+      <div class="form-grid">
+        <div class="f-field field-aht">
+          <label>الاختصار</label>
+          <input type="text" class="f-input legacy-key-input" maxlength="30"
+                 [ngModel]="form().AHT"
+                 (ngModelChange)="updateField('AHT', $event)"
+                 [disabled]="mode() !== 'new'" />
+        </div>
+
+        <div class="f-field field-baht">
+          <label>البيان</label>
+          <input type="text" class="f-input" maxlength="500"
+                 [ngModel]="form().BAHT"
+                 (ngModelChange)="updateField('BAHT', $event)"
+                 [disabled]="!editable()" />
+        </div>
+      </div>
+      @if (selectedIsSystemShortcut() && !editable()) {
+        <div class="legacy-note">لا يمكن تعديل هذا الاختصار لأنه اختصار نظام</div>
+      }
+    </div>
+
+    <div class="panel grid-panel">
+      <div class="list-search">
+        <input class="f-input" placeholder="بحث..."
+               [ngModel]="search()" (ngModelChange)="search.set($event)" />
+      </div>
+      <div class="list-scroll">
+        @if (loading()) {
+          <div class="list-empty"><i class="pi pi-spin pi-spinner"></i></div>
+        } @else if (filtered().length === 0) {
+          <div class="list-empty">لا توجد اختصارات</div>
+        } @else {
+          <table class="legacy-grid">
+            <thead>
+              <tr>
+                <th class="col-aht">الاختصار</th>
+                <th>البيان</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (r of filtered(); track trackByAht($index, r)) {
+                <tr [class.row-active]="r.AHT === selected()"
+                    (click)="!editable() && !saving() && openRow(r)">
+                  <td class="td-key">{{ r.AHT }}</td>
+                  <td>{{ r.BAHT || '' }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        }
+      </div>
+    </div>
+  </div>
+</div>
+
+

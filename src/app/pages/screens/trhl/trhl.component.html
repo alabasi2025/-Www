@@ -1,0 +1,137 @@
+﻿<div class="trhl-root" dir="rtl">
+  <header class="trhl-titlebar" dir="ltr">
+    <span class="window-icon" aria-hidden="true"></span>
+    <h2>شاشة ترحيل والغاء ترحيل المستندات</h2>
+    <button type="button" class="window-close" title="خروج" (click)="onExit()" [disabled]="saving()">×</button>
+  </header>
+
+  <app-legacy-toolbar
+    screen="TRHL.FMX"
+    [permissionModel]="toolbarPermissions()"
+    mode="browse"
+    [saving]="saving()"
+    [hasCurrent]="hasCurrent()"
+    [posted]="posted()"
+    title="شاشة ترحيل والغاء ترحيل المستندات"
+    [countBadge]="rows().length + ' مستند'"
+    [actions]="['exit','search','refresh','post','unpost']"
+    [enabledRules]="{
+      exit: !saving(),
+      search: !saving(),
+      refresh: !saving(),
+      post: canPost(),
+      unpost: canUnpost()
+    }"
+    (action)="onToolbarAction($event)">
+    <div class="trhl-toolbar-tools">
+      <button type="button" (click)="navTo('first')" [disabled]="currentIdx() <= 0">|&lt;</button>
+      <button type="button" (click)="navTo(-1)" [disabled]="currentIdx() <= 0">&lt;</button>
+      <span>سجل: {{ currentIdx() + 1 }}/{{ rows().length || 1 }}</span>
+      <button type="button" (click)="navTo(1)" [disabled]="currentIdx() >= rows().length - 1">&gt;</button>
+      <button type="button" (click)="navTo('last')" [disabled]="currentIdx() >= rows().length - 1">&gt;|</button>
+      <button type="button" class="post-all" (click)="applyAllDisplayed(0)" [disabled]="saving() || !rows().length">ترحيل الكل</button>
+      <button type="button" class="unpost-all" (click)="applyAllDisplayed(1)" [disabled]="saving() || !rows().length">إلغاء الكل</button>
+    </div>
+  </app-legacy-toolbar>
+
+  <app-legacy-status-bar
+    [error]="err()"
+    [info]="info()"
+    [badges]="statusBadges()"
+    (dismiss)="clearMessages()" />
+
+  <section class="filters legacy-window">
+    <div class="filter-grid">
+      <label>
+        <span>المرحلة</span>
+        <select [ngModel]="status()" (ngModelChange)="status.set($event); fetchRows()" [disabled]="saving()">
+          <option value="unposted">الغير مرحلة</option>
+          <option value="posted">المرحلة</option>
+        </select>
+      </label>
+      <label>
+        <span>نوع المستند</span>
+        <select [ngModel]="typems()" (ngModelChange)="typems.set($event ? +$event : null); fetchRows()" [disabled]="saving()">
+          <option [ngValue]="null">الكل</option>
+          @for (type of types(); track type.TYPEMS) {
+            <option [ngValue]="type.TYPEMS">{{ type.TMC || type.TYPEMS }} - {{ type.TYPEMS }}</option>
+          }
+        </select>
+      </label>
+      <label>
+        <span>التاريخ</span>
+        <div class="date-filter">
+          <select [ngModel]="op()" (ngModelChange)="op.set($event); fetchRows()" [disabled]="saving()">
+            <option value="<=">&lt;=</option>
+            <option value="=">=</option>
+            <option value=">=">&gt;=</option>
+          </select>
+          <input type="date" [ngModel]="date()" (ngModelChange)="date.set($event); fetchRows()" [disabled]="saving()" />
+        </div>
+      </label>
+      <label>
+        <span>رقم المستند</span>
+        <input dir="ltr" [ngModel]="noson()" (ngModelChange)="noson.set($event)" (keyup.enter)="fetchRows()" [disabled]="saving()" />
+      </label>
+      <label>
+        <span>بحث</span>
+        <input [ngModel]="search()" (ngModelChange)="search.set($event)" (keyup.enter)="fetchRows()" [disabled]="saving()" />
+      </label>
+    </div>
+  </section>
+
+  <section class="documents legacy-window">
+    <div class="window-title">المستندات</div>
+    <div class="grid-wrap">
+      <table class="legacy-grid">
+        <thead>
+          <tr>
+            <th>ترحيل</th>
+            <th>حالة الترحيل</th>
+            <th>قيد انتظار</th>
+            <th>تاريخ المستند</th>
+            <th>رقم المستند</th>
+            <th>نوع المستند</th>
+            <th>الجدول</th>
+          </tr>
+        </thead>
+        <tbody>
+          @if (loading()) {
+            <tr><td colspan="7" class="empty-cell">جاري التحميل...</td></tr>
+          } @else {
+            @for (row of rows(); track row.NATB + '-' + row.NOS) {
+              <tr
+                [class.active]="row.NOS === current()?.NOS && row.NATB === current()?.NATB"
+                [class.posted]="row.MRHL === 0"
+                (click)="selectRow(row)">
+                <td class="action-cell">
+                  <button type="button" class="mini-post" (click)="selectRow(row); applyCurrent(0); $event.stopPropagation()" [disabled]="!canPost(row)">ترحيل</button>
+                  <button type="button" class="mini-unpost" (click)="selectRow(row); applyCurrent(1); $event.stopPropagation()" [disabled]="!canUnpost(row)">إلغاء</button>
+                </td>
+                <td>{{ statusText(row) }}</td>
+                <td>{{ row.KDANT ? 'نعم' : 'لا' }}</td>
+                <td>{{ row.DATES ? (row.DATES | date:'yyyy/MM/dd') : '' }}</td>
+                <td dir="ltr">{{ row.NOSON || row.NOS }}</td>
+                <td>{{ row.TMC || row.TYPEMS || '' }}</td>
+                <td dir="ltr">{{ row.NATB }}</td>
+              </tr>
+            } @empty {
+              <tr><td colspan="7" class="empty-cell">لا توجد مستندات</td></tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="detail-footer legacy-window">
+    <div class="detail-grid">
+      <label><span>نوع المستند</span><input [value]="current()?.TMC || ''" disabled /></label>
+      <label><span>الجدول</span><input [value]="current()?.NATB || ''" disabled dir="ltr" /></label>
+      <label><span>رقم المستند</span><input [value]="current()?.NOSON || current()?.NOS || ''" disabled dir="ltr" /></label>
+      <label><span>تاريخ المستند</span><input [value]="current()?.DATES ? (current()?.DATES | date:'yyyy/MM/dd') : ''" disabled /></label>
+      <label><span>قيد انتظار</span><input [value]="current()?.KDANT ? 'نعم' : 'لا'" disabled /></label>
+      <label><span>حالة الترحيل</span><input [value]="statusText(current())" disabled /></label>
+    </div>
+  </section>
+</div>

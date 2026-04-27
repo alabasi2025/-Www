@@ -1,0 +1,128 @@
+<div class="inanou-root" dir="rtl">
+  <header class="inanou-titlebar" dir="ltr">
+    <span class="window-icon" aria-hidden="true"></span>
+    <h2>مواعيد دخول وخروج المستخدمين</h2>
+    <button type="button" class="window-close" title="خروج" (click)="onToolbarAction('exit')" [disabled]="saving()">×</button>
+  </header>
+
+  <app-legacy-toolbar
+    screen="INANOU.FMX"
+    [permissionModel]="permissionModel()"
+    mode="browse"
+    [saving]="saving()"
+    [hasCurrent]="filteredRows().length > 0"
+    title="مواعيد دخول وخروج المستخدمين"
+    [countBadge]="filteredRows().length + ' عملية'"
+    [actions]="['exit','search','refresh','print','cancel','delete']"
+    [enabledRules]="{
+      exit: !saving(),
+      search: !saving(),
+      refresh: !saving(),
+      print: !saving(),
+      cancel: !saving(),
+      delete: !saving() && canDelete() && rows().length > 0
+    }"
+    (action)="onToolbarAction($event)">
+    <div class="inanou-toolbar-tools" aria-label="أدوات تقرير دخول وخروج المستخدمين">
+      <button type="button" (click)="printReport()" [disabled]="saving() || loading()" title="F6 / F10">
+        عرض التقرير
+      </button>
+      <button type="button" (click)="resetFilters()" [disabled]="saving()" title="F7">
+        تراجع
+      </button>
+      <button type="button" (click)="focusUserFilter()" [disabled]="saving()" title="F8">
+        اسم المستخدم
+      </button>
+    </div>
+  </app-legacy-toolbar>
+
+  <app-legacy-status-bar [error]="err()" [info]="info()" [badges]="statusBadges()" (dismiss)="clearMessages()" />
+
+  <section class="legacy-panel filters-panel">
+    <div class="legacy-caption">معايير التقرير</div>
+    <div class="filters-grid">
+      <label>
+        <span>من تاريخ</span>
+        <input
+          type="date"
+          [ngModel]="filters().fromDate"
+          (ngModelChange)="setFilter('fromDate', $event)"
+          [disabled]="saving() || loading()" />
+      </label>
+
+      <label>
+        <span>إلى تاريخ</span>
+        <input
+          type="date"
+          [ngModel]="filters().toDate"
+          (ngModelChange)="setFilter('toDate', $event)"
+          [disabled]="saving() || loading()" />
+      </label>
+
+      <label class="user-filter">
+        <span>اسم المستخدم</span>
+        <select
+          #userSelect
+          [ngModel]="filters().userNo"
+          (ngModelChange)="setFilter('userNo', $event ? +$event : null)"
+          [disabled]="saving() || loading()">
+          <option [ngValue]="null">كل المستخدمين</option>
+          @for (user of users(); track user.NOU) {
+            <option [ngValue]="user.NOU">{{ user.NOU }} - {{ user.NAMEU }}</option>
+          }
+        </select>
+      </label>
+
+      <div class="actions-box">
+        <button type="button" class="primary" (click)="printReport()" [disabled]="saving() || loading()">
+          عرض التقرير
+          <small>F6 / F10</small>
+        </button>
+        <button type="button" class="danger" (click)="deleteAllOperations()" [disabled]="saving() || loading() || !canDelete() || rows().length === 0">
+          حذف جميع العمليات
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <div class="inanou-layout">
+    <section class="legacy-panel table-panel">
+      <div class="legacy-caption">العمليات المسجلة في USEIN</div>
+      <div class="grid-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>رقم المستخدم</th>
+              <th>اسم المستخدم</th>
+              <th>تاريخ الدخول</th>
+              <th>وقت العملية</th>
+              <th>الجهاز</th>
+              <th>ملاحظة</th>
+              <th>الترتيب</th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (loading()) {
+              <tr><td colspan="7" class="empty">جاري تحميل بيانات الدخول والخروج...</td></tr>
+            } @else {
+              @for (row of filteredRows(); track row.INDX ?? $index) {
+                <tr>
+                  <td>{{ row.NO }}</td>
+                  <td>{{ userName(row.NO) }}</td>
+                  <td>{{ rowDate(row.DATEI) | date:dateDisplayFormat }}</td>
+                  <td dir="ltr">{{ row.TIEMI || '-' }}</td>
+                  <td dir="ltr">{{ row.PC || '-' }}</td>
+                  <td>{{ row.MEMO || '-' }}</td>
+                  <td>{{ row.INDX }}</td>
+                </tr>
+              } @empty {
+                <tr><td colspan="7" class="empty">لا توجد عمليات ضمن المعايير الحالية</td></tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</div>
+

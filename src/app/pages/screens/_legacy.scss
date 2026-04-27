@@ -1,0 +1,218 @@
+// ─────────────────────────────────────────────────────────────────
+//   _legacy.scss — shared Forms 6i tokens & atoms
+//   Import via:  @use '../_legacy' as L;  // then L.$blue-bg, etc.
+//   Or rely on the side-effect classes by @import'ing without alias.
+// ─────────────────────────────────────────────────────────────────
+
+// ─── Colour tokens ──────────────────────────────────────────
+$blue-bg:      #a9c8e6;   // overall chrome
+$panel-bg:     #e7eff7;   // inset panels
+$panel-border: #7a9bbc;   // panel frame
+$toolbar-bg:   #a9c8e6;
+$input-bg:     #efefef;
+$input-border: #7f8f9f;
+$input-focus:  #244d78;
+$label-color:  #111;
+$accent:       #0a2742;
+$danger-red:   #b21b1b;
+$info-blue:    #11395e;
+
+// ─── Message bar ────────────────────────────────────────────
+.msg-bar {
+  min-height: 24px;
+  border: 1px solid #8aa1b8;
+  background: #d7e9f9;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 2px 8px; font-size: 12px;
+}
+.msg-bar.msg-error { background: #ffe3e3; border-color: #d98f8f; color: #8a1f1f; }
+.msg-bar.msg-info  { background: #e9f6e5; border-color: #98b89a; color: #214d2c; }
+.msg-close {
+  border: 1px solid #8da2b7; background: #f5f7fa;
+  width: 20px; height: 20px; cursor: pointer;
+}
+
+// ─── Toolbar row ────────────────────────────────────────────
+.toolbar-row {
+  border: 1px solid #6e8fb0;
+  background: $toolbar-bg;
+  min-height: 38px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 2px 6px;
+  direction: ltr;
+  flex-shrink: 0;
+}
+.toolbar-icons {
+  display: flex; flex-direction: row-reverse; align-items: center; gap: 3px;
+}
+.toolbar-title {
+  font: 700 13px Tahoma, Arial, sans-serif;
+  color: $accent;
+  direction: rtl;
+  padding-inline-start: 10px;
+}
+
+.tb-btn {
+  width: 39px; height: 31px;
+  border: 1px solid #7f7f7f;
+  background: #ececec;
+  color: transparent;
+  cursor: pointer;
+  padding: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 18px 18px;
+
+  i { display: none; }
+  &:hover:not(:disabled) { background-color: #f7f7f7; }
+  &:disabled { opacity: 0.35; cursor: default; }
+}
+
+.tb-btn.tb-new    { background-image: url('/legacy-icons/N.ico'); }
+.tb-btn.tb-save   { background-image: url('/legacy-icons/S.ico'); }
+.tb-btn.tb-back   { background-image: url('/legacy-icons/Z.ico'); }
+.tb-btn.tb-edit   { background-image: url('/legacy-icons/E.ICO'); }
+.tb-btn.tb-delete { background-image: url('/legacy-icons/D.ico'); }
+.tb-btn.tb-search { background-image: url('/legacy-icons/SA.ico'); }
+.tb-btn.tb-print  { background-image: url('/legacy-icons/pr.ico'); }
+.tb-btn.tb-exit   { background-image: url('/legacy-icons/in.ico'); }
+.tb-btn.tb-refresh {
+  background-image: url('/legacy-icons/nn.png') !important;
+  background-size: 18px 18px !important;
+}
+
+// ─── Panel & form atoms ─────────────────────────────────────
+.panel { border: 1px solid $panel-border; background: $panel-bg; }
+
+.f-field {
+  display: flex; flex-direction: column; gap: 3px;
+
+  label {
+    font-size: 11px; font-weight: 700; color: $label-color;
+    text-align: right; white-space: nowrap;
+  }
+}
+.f-field.f-wide { width: 100%; }
+
+.f-input {
+  height: 24px;
+  border: 1px solid $input-border;
+  background: $input-bg;
+  padding: 0 6px;
+  font-family: inherit; font-size: 12px;
+  width: 100%; min-width: 0;
+
+  &:focus { outline: none; border-color: $input-focus; background: #ffffff; }
+  &:disabled, &[readonly] { background: #e8e8e8; color: #1f1f1f; }
+}
+
+.f-select { padding-inline-end: 18px; }
+.f-num-small { max-width: 100px; }
+
+.f-inline {
+  display: flex; align-items: center; gap: 6px;
+}
+.inline-hint { font-size: 11px; color: #355d87; white-space: nowrap; }
+
+// ─── Checkboxes / radios ───────────────────────────────────
+.legacy-check {
+  display: flex; align-items: center; gap: 6px;
+  font-weight: 700; cursor: pointer; min-height: 22px;
+
+  input[type="checkbox"], input[type="radio"] {
+    width: 18px; height: 18px; cursor: pointer; flex-shrink: 0;
+  }
+  span { color: #0b0b0b; line-height: 1.3; }
+  &.inline { min-height: 24px; }
+}
+
+// ─── Sidebar list (used by master-data screens) ─────────────
+.list-panel { display: flex; flex-direction: column; overflow: hidden; }
+.list-search {
+  padding: 4px;
+  border-bottom: 1px solid $panel-border;
+  background: #d4e3f3;
+  .f-input { background: #fff; }
+}
+.list-scroll { flex: 1; overflow: auto; padding: 2px; }
+.list-empty {
+  text-align: center; color: #5a6879;
+  padding: 24px 8px; font-size: 12px;
+}
+
+.list-item {
+  width: 100%;
+  border: 1px solid transparent; background: transparent;
+  padding: 4px 6px; text-align: right; cursor: pointer;
+  display: grid; align-items: center; gap: 6px;
+  font: inherit; color: $accent;
+
+  &:hover:not(:disabled) { background: #dceaf7; }
+  &:disabled { cursor: default; opacity: 0.55; }
+}
+.list-item-active {
+  background: #b2d1ee !important;
+  border-color: #6a8bac !important;
+  font-weight: 700;
+}
+
+.li-num   { font-family: Consolas, monospace; color: $info-blue; font-size: 11px; text-align: left; }
+.li-name  { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.li-meta  { font-family: Consolas, monospace; font-size: 11px; color: $info-blue; text-align: left; }
+
+// ─── LOV overlay ────────────────────────────────────────────
+.lov-overlay {
+  position: fixed; inset: 0;
+  background: rgba(12, 19, 31, 0.45);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 2000;
+}
+.lov-dialog {
+  width: min(720px, 96vw);
+  max-height: 80vh;
+  background: #f1f6fb;
+  border: 1px solid #6f8dab;
+  display: flex; flex-direction: column;
+}
+.lov-head {
+  height: 34px;
+  background: #9fc0df;
+  border-bottom: 1px solid #6f8dab;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 10px;
+  h3 { margin: 0; font-size: 13px; color: $accent; }
+  button {
+    width: 22px; height: 22px;
+    border: 1px solid #6f8dab; background: #f4f7fb;
+    cursor: pointer;
+  }
+}
+.lov-search { padding: 8px; border-bottom: 1px solid #bfd2e5; }
+.lov-results {
+  overflow: auto; flex: 1; padding: 0 8px 8px;
+
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    background: #8fc6df; border: 1px solid $input-border;
+    padding: 4px 6px; text-align: right; font-weight: 700;
+    position: sticky; top: 0;
+  }
+  td { border: 1px solid #b2bed0; padding: 3px 6px; background: #fff; cursor: pointer; }
+  tbody tr:hover td { background: #dceaf7; }
+  .mono { font-family: Consolas, monospace; }
+}
+
+// ─── Base legacy shell (body backdrop) ──────────────────────
+%legacy-shell {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  direction: rtl;
+  gap: 2px;
+  padding: 2px;
+  background: $blue-bg;
+  color: #0b0b0b;
+  font-family: Tahoma, Arial, sans-serif;
+  font-size: 12px;
+  overflow: hidden;
+}

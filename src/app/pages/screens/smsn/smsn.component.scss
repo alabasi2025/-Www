@@ -1,0 +1,284 @@
+:host {
+  display: block;
+  height: 100%;
+  min-height: 0;
+}
+
+.smsn-root {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #a9c8e6;
+  color: #001b37;
+  font: 12px Tahoma, Arial, sans-serif;
+}
+
+.smsn-toolbar-tools {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.smsn-toolbar-tools button,
+.smsn-toolbar-tools input {
+  height: 23px;
+  border: 1px solid #748ba1;
+  background: #eef3f8;
+  color: #082f55;
+  font: 12px Tahoma, Arial, sans-serif;
+}
+
+.smsn-toolbar-tools button {
+  min-width: 25px;
+  background: linear-gradient(#ffffff, #dbeaf7);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.smsn-toolbar-tools button.active {
+  border-color: #0070b8;
+  background: #d5edff;
+}
+
+.smsn-toolbar-tools button:disabled {
+  opacity: .55;
+  cursor: default;
+}
+
+.smsn-toolbar-tools input {
+  width: 170px;
+  padding: 2px 6px;
+}
+
+.smsn-layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 300px minmax(0, 1fr);
+  gap: 4px;
+  padding: 4px;
+}
+
+.smsn-list,
+.legacy-window {
+  border: 1px solid #7896b1;
+  background: #b5d2ea;
+}
+
+.smsn-list {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.panel-title,
+.window-title {
+  min-height: 25px;
+  padding: 5px 8px;
+  border-bottom: 1px solid #7896b1;
+  background: linear-gradient(#cbe2f5, #9fc2df);
+  color: #002a54;
+  font-weight: 700;
+  text-align: center;
+}
+
+.list-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 4px;
+}
+
+.account-card {
+  width: 100%;
+  border: 1px solid #819ab2;
+  background: #e6edf3;
+  color: #092f55;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 6px;
+  margin-bottom: 4px;
+  padding: 5px;
+  text-align: right;
+  cursor: pointer;
+  font: 12px Tahoma, Arial, sans-serif;
+}
+
+.account-card.active,
+.account-card:hover {
+  border-color: #006ab6;
+  background: #d2e8fa;
+}
+
+.account-name {
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-no,
+.account-phone {
+  color: #4a5c70;
+  font-size: 11px;
+}
+
+.account-phone {
+  grid-column: 1 / -1;
+  direction: ltr;
+  text-align: right;
+}
+
+.smsn-work {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.form-grid {
+  padding: 9px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+label {
+  display: grid;
+  gap: 3px;
+  color: #001b37;
+  font-weight: 700;
+}
+
+label.wide {
+  grid-column: span 2;
+}
+
+input {
+  height: 25px;
+  border: 1px solid #7b91a5;
+  background: #edf1f4;
+  color: #111827;
+  padding: 3px 5px;
+  font: 12px Tahoma, Arial, sans-serif;
+}
+
+input:disabled {
+  background: #dce3e9;
+  color: #24384d;
+}
+
+.flags {
+  border-top: 1px solid #7896b1;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+  gap: 22px;
+}
+
+.legacy-check {
+  display: inline-flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 6px;
+  font-weight: 700;
+}
+
+.legacy-check input {
+  width: 18px;
+  height: 18px;
+}
+
+.legacy-check.danger {
+  color: #d31313;
+}
+
+.help-window { display: none; }
+
+.legacy-help {
+  padding: 8px;
+  display: grid;
+  gap: 5px;
+  color: #14334f;
+}
+
+.empty {
+  padding: 14px;
+  text-align: center;
+  color: #5b6977;
+}
+
+@media (max-width: 900px) {
+  .smsn-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .smsn-list {
+    max-height: 220px;
+  }
+
+  .form-grid {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+  }
+}
+
+
+/* Legacy MDI window extracted from Oracle Forms chrome. */
+.smsn-root {
+  
+  left: 230px !important;
+  top: 114px !important;
+  
+  width: 900px !important;
+  height: 540px !important;
+  min-height: 0 !important;
+  box-sizing: border-box;
+  overflow: hidden !important;
+  background: #a9c8e6 !important;
+  border: 1px solid #6f8294;
+  box-shadow: 1px 1px 0 #ffffff inset, -1px -1px 0 #7f9cb6 inset;
+  
+}
+
+.smsn-titlebar {
+  height: 29px;
+  min-height: 29px;
+  box-sizing: border-box;
+  border: 1px solid #7aa3c7;
+  border-bottom-color: #5f86a7;
+  background: linear-gradient(#d4e8f8, #A8C8E6);
+  display: flex;
+  align-items: center;
+  direction: ltr;
+  padding: 2px 5px;
+}
+
+.smsn-titlebar .window-icon {
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  background: url('/legacy-icons/w.ico') center / contain no-repeat;
+}
+
+.smsn-titlebar h2 {
+  flex: 1;
+  margin: 0;
+  color: #536170;
+  font: 400 12px Tahoma, Arial, sans-serif;
+  text-align: right;
+  direction: rtl;
+}
+
+.smsn-titlebar .window-close {
+  width: 30px;
+  height: 21px;
+  border: 1px solid #8094a9;
+  border-radius: 2px;
+  background: linear-gradient(#f5fbff, #bdd3e4);
+  color: #3c4e5f;
+  font: 700 14px Arial, sans-serif;
+  line-height: 16px;
+  padding: 0;
+  cursor: pointer;
+}

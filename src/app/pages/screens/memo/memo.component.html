@@ -1,0 +1,132 @@
+﻿<div class="memo-root" dir="rtl">
+  <header class="memo-titlebar" dir="ltr">
+    <span class="window-icon" aria-hidden="true"></span>
+    <h2>مذكرة مواعيد</h2>
+    <button type="button" class="window-close" title="خروج" (click)="onToolbarAction('exit')" [disabled]="saving()">×</button>
+  </header>
+
+  <app-legacy-toolbar
+    screen="MEMO.FMX"
+    [mode]="mode()"
+    [saving]="saving()"
+    [hasCurrent]="!!current().RID"
+    title="مذكرة مواعيد"
+    [countBadge]="rows().length + ' مذكرة'"
+    [actions]="['exit','new','edit','search','delete','refresh','save','cancel']"
+    [enabledRules]="{
+      exit: !saving(),
+      new: !saving() && !editable(),
+      edit: !!current().RID && !saving() && !editable(),
+      search: !saving() && !editable(),
+      delete: !!current().RID && !saving() && !editable(),
+      refresh: !saving(),
+      save: editable() && !saving(),
+      cancel: editable() && !saving()
+    }"
+    (action)="onToolbarAction($event)">
+    <div class="memo-toolbar-tools" aria-label="اختصارات شاشة مذكرة المواعيد">
+      <button type="button" title="أول سجل" aria-label="أول سجل" (click)="navTo('first')" [disabled]="editable() || currentIdx() <= 0">|&lt;</button>
+      <button type="button" title="السجل السابق" aria-label="السجل السابق" (click)="navTo(-1)" [disabled]="editable() || currentIdx() <= 0">&lt;</button>
+      <span title="السجل الحالي">سجل: {{ currentIdx() + 1 }}/{{ rows().length || 1 }}</span>
+      <button type="button" title="السجل التالي" aria-label="السجل التالي" (click)="navTo(1)" [disabled]="editable() || currentIdx() >= rows().length - 1">&gt;</button>
+      <button type="button" title="آخر سجل" aria-label="آخر سجل" (click)="navTo('last')" [disabled]="editable() || currentIdx() >= rows().length - 1">&gt;|</button>
+      <select title="فلترة المذكرات" [ngModel]="filterMode()" (ngModelChange)="filterMode.set($event); fetchRows()" [disabled]="editable()">
+        <option value="today">مذكرات اليوم</option>
+        <option value="future">القادمة</option>
+        <option value="past">السابقة</option>
+        <option value="all">عرض الكل</option>
+      </select>
+      <input type="search" title="بحث F3" placeholder="بحث..." [ngModel]="search()" (ngModelChange)="search.set($event)" />
+    </div>
+  </app-legacy-toolbar>
+
+  <app-legacy-status-bar
+    [error]="err()"
+    [info]="info()"
+    [badges]="statusBadges()"
+    (dismiss)="clearMessages()" />
+
+  <div class="memo-layout">
+    <aside class="memo-list">
+      <div class="panel-title">المذكرات</div>
+      <div class="memo-list-body">
+        @if (loading()) {
+          <div class="empty">جاري التحميل...</div>
+        } @else {
+          @for (row of rows(); track row.RID) {
+            <button
+              type="button"
+              class="memo-card"
+              [class.active]="row.RID === current().RID"
+              (click)="selectRow(row)">
+              <span class="memo-date">{{ (row.DALOP || row.DATEM) | date:'yyyy/MM/dd' }}</span>
+              <span class="memo-repeat">{{ repeatLabel(row) }}</span>
+              <span class="memo-text">{{ row.MEMO || '' }}</span>
+              <span class="memo-user">{{ row.NAMEU || row.NOU || 'عام' }}</span>
+            </button>
+          } @empty {
+            <div class="empty">لا توجد مذكرات</div>
+          }
+        }
+      </div>
+    </aside>
+
+    <main class="memo-work">
+      <section class="legacy-window">
+        <div class="window-title">بيانات المذكرة</div>
+        <div class="form-grid">
+          <label>
+            <span>تاريخ محدد</span>
+            <input
+              type="date"
+              [ngModel]="dateInput(current().DATEM)"
+              (ngModelChange)="onDateChange($event)"
+              [disabled]="!editable()" />
+          </label>
+          <label>
+            <span>تكرار حسب اليوم</span>
+            <select
+              [ngModel]="current().LOP || 'NOT'"
+              (ngModelChange)="onRepeatChange($event)"
+              [disabled]="!editable() || !!current().DATEM">
+              <option value="NOT">بلا تكرار</option>
+              <option value="SAT">السبت</option>
+              <option value="SUN">الأحد</option>
+              <option value="MON">الإثنين</option>
+              <option value="TUE">الثلاثاء</option>
+              <option value="WED">الأربعاء</option>
+              <option value="THU">الخميس</option>
+              <option value="FRI">الجمعة</option>
+              <option value="MMM">آخر الشهر</option>
+            </select>
+          </label>
+          <label>
+            <span>تاريخ العرض</span>
+            <input
+              type="date"
+              [ngModel]="dateInput(current().DALOP)"
+              (ngModelChange)="patch({ DALOP: $event })"
+              [disabled]="!editable()" />
+          </label>
+          <label>
+            <span>المستخدم</span>
+            <input
+              type="number"
+              [ngModel]="current().NOU || userNou() || ''"
+              (ngModelChange)="patch({ NOU: +$event })"
+              [disabled]="!editable()" />
+          </label>
+          <label class="memo-textarea">
+            <span>الملاحظة</span>
+            <textarea
+              rows="8"
+              [ngModel]="current().MEMO || ''"
+              (ngModelChange)="patch({ MEMO: $event })"
+              [disabled]="!editable()"></textarea>
+          </label>
+        </div>
+      </section>
+    </main>
+  </div>
+</div>
+

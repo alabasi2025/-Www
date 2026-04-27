@@ -1,0 +1,29 @@
+@if (visible()) {
+  <div class="ss-wrap" dir="rtl">
+    @if (current(); as c) {
+      <div class="ss-msg" [class]="'ss-' + c.variant">
+        <i class="pi {{ iconFor(c.variant) }}"></i>
+        <span class="ss-text">{{ c.message }}</span>
+        @if (dismissible()) {
+          <button type="button" class="ss-close" (click)="onDismiss()" aria-label="إغلاق">
+            <i class="pi pi-times"></i>
+          </button>
+        }
+      </div>
+    }
+
+    @if (badges().length > 0) {
+      <div class="ss-badges">
+        @for (b of badges(); track b.label) {
+          <span
+            class="ss-badge"
+            [class]="b.variant ? 'ss-badge-' + b.variant : 'ss-badge-info'"
+            [title]="b.title || b.label">
+            @if (b.icon) { <i class="pi {{ b.icon }}"></i> }
+            <span>{{ b.label }}</span>
+          </span>
+        }
+      </div>
+    }
+  </div>
+}

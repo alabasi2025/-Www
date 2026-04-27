@@ -1,0 +1,25 @@
+@if (visible()) {
+  <div class="legacy-status-wrap" dir="rtl">
+    @if (current(); as c) {
+      <div class="legacy-msg" [class]="'legacy-msg ' + 'legacy-msg-' + c.variant">
+        <span class="legacy-msg-text">{{ c.text }}</span>
+        @if (dismissible()) {
+          <button type="button" class="legacy-msg-close" (click)="onDismiss()" aria-label="إغلاق">
+            <i class="pi pi-times"></i>
+          </button>
+        }
+      </div>
+    }
+
+    @if (badges().length > 0) {
+      <div class="legacy-badges">
+        @for (badge of badges(); track badge.label) {
+          <span class="legacy-badge" [class]="'legacy-badge legacy-badge-' + (badge.variant ?? 'info')">
+            @if (badge.icon) { <i class="pi {{ badge.icon }}"></i> }
+            <span>{{ badge.label }}</span>
+          </span>
+        }
+      </div>
+    }
+  </div>
+}

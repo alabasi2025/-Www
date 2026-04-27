@@ -1,0 +1,42 @@
+@if (hasAny) {
+  <div class="audit-card" [class.inline]="inline()" dir="rtl">
+    @if (!inline()) {
+      <div class="audit-header"><i class="pi pi-history"></i> سجل التدقيق</div>
+    }
+    <div class="audit-body">
+      @if (record()['DI']) {
+        <div class="audit-item">
+          <i class="pi pi-calendar-plus"></i>
+          <span class="audit-label">أُدخل:</span>
+          <span class="audit-val">{{ asStr(record()['DI']) | date:'yyyy-MM-dd HH:mm' }}</span>
+          @if (record()['NOUSX']) {
+            <span class="audit-user"><i class="pi pi-user"></i> {{ record()['NOUSX'] }}</span>
+          }
+          @if (record()['PCI']) {
+            <span class="audit-pc"><i class="pi pi-desktop"></i> {{ record()['PCI'] }}</span>
+          }
+        </div>
+      }
+      @if (record()['DE']) {
+        <div class="audit-item">
+          <i class="pi pi-pencil"></i>
+          <span class="audit-label">آخر تعديل:</span>
+          <span class="audit-val">{{ asStr(record()['DE']) | date:'yyyy-MM-dd HH:mm' }}</span>
+          @if (record()['NOUSXU']) {
+            <span class="audit-user"><i class="pi pi-user"></i> {{ record()['NOUSXU'] }}</span>
+          }
+          @if (record()['PCE']) {
+            <span class="audit-pc"><i class="pi pi-desktop"></i> {{ record()['PCE'] }}</span>
+          }
+        </div>
+      }
+      @if (record()['NED']) {
+        <div class="audit-item audit-ned">
+          <i class="pi pi-sync"></i>
+          <span class="audit-label">عدد مرات التعديل:</span>
+          <span class="audit-val"><strong>{{ record()['NED'] }}</strong></span>
+        </div>
+      }
+    </div>
+  </div>
+}
