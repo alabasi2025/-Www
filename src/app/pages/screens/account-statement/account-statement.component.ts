@@ -1,8 +1,9 @@
-import { ChangeDetectionStrategy, Component, computed, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe, DecimalPipe } from '@angular/common';
-import { httpResource } from '@angular/common/http';
+import { HttpClient, httpResource } from '@angular/common/http';
 import { FormField, form } from '@angular/forms/signals';
-import { LovAccount, LovPickerComponent } from '../../../shared/lov-picker/lov-picker.component';
+import { firstValueFrom } from 'rxjs';
+import type { LovAccount } from '../../../shared/lov-picker/lov-picker.component';
 
 interface StatementFilters {
   noa: string;
@@ -117,12 +118,14 @@ function cleanCsv(value: unknown): string {
 
 @Component({
   selector: 'app-account-statement',
-  imports: [CommonModule, DecimalPipe, DatePipe, FormField, LovPickerComponent],
+  imports: [CommonModule, DecimalPipe, DatePipe, FormField],
   templateUrl: './account-statement.component.html',
   styleUrl: './account-statement.component.scss',
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
 export class AccountStatementComponent {
+  private readonly http = inject(HttpClient);
+
   readonly filtersModel = signal<StatementFilters>({
     noa: '12130001',
     dateFrom: '2022-01-01',
@@ -135,7 +138,12 @@ export class AccountStatementComponent {
   readonly filters = form(this.filtersModel);
   readonly applied = signal<StatementFilters>(this.filtersModel());
   readonly lovOpen = signal(false);
+  readonly accountSearchQuery = signal('');
+  readonly accountRows = signal<LovAccount[]>([]);
+  readonly accountLookupLoading = signal(false);
+  readonly accountLookupError = signal<string | null>(null);
   readonly notice = signal<string | null>(null);
+  private accountSearchTimer: ReturnType<typeof setTimeout> | null = null;
 
   readonly statement = httpResource<StatementResponse>(() => {
     const f = this.applied();
@@ -208,16 +216,52 @@ export class AccountStatementComponent {
 
   openAccounts(): void {
     this.lovOpen.set(true);
+    this.accountSearchQuery.set('');
+    void this.fetchAccounts('');
   }
 
   closeAccounts(): void {
     this.lovOpen.set(false);
+    this.accountLookupError.set(null);
+    if (this.accountSearchTimer) {
+      clearTimeout(this.accountSearchTimer);
+      this.accountSearchTimer = null;
+    }
   }
 
   pickAccount(account: LovAccount): void {
     this.filtersModel.update((f) => ({ ...f, noa: String(account.NOA) }));
     this.lovOpen.set(false);
     this.applyFilters();
+  }
+
+  searchAccounts(query: string): void {
+    this.accountSearchQuery.set(query);
+    if (this.accountSearchTimer) clearTimeout(this.accountSearchTimer);
+    this.accountSearchTimer = setTimeout(() => void this.fetchAccounts(query), 180);
+  }
+
+  async fetchAccounts(query: string): Promise<void> {
+    this.accountLookupLoading.set(true);
+    this.accountLookupError.set(null);
+    try {
+      const q = query.trim() || '%';
+      const url = `/api/lov/accounts?q=${encodeURIComponent(q)}&rtba=5&limit=80`;
+      const response = await firstValueFrom(
+        this.http.get<{ ok: boolean; items?: LovAccount[]; error?: string }>(url),
+      );
+      if (!response.ok) {
+        this.accountRows.set([]);
+        this.accountLookupError.set(response.error || 'تعذر تحميل الحسابات');
+      } else {
+        this.accountRows.set(response.items ?? []);
+      }
+    } catch (error) {
+      this.accountRows.set([]);
+      this.accountLookupError.set(error instanceof Error ? error.message : 'تعذر تحميل الحسابات');
+    } finally {
+      this.accountLookupLoading.set(false);
+    }
   }
 
   setRange2022(): void {

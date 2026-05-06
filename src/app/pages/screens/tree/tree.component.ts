@@ -465,7 +465,7 @@ export class TreeComponent implements OnInit {
   // ══ CONT block cascading selectors ═════════════════
   // NOA1: top-level — mirrors listx ('CONT.noa1',â€¦ where nvl(noa,0)<5)
   readonly noa1Options = computed<Account[]>(() =>
-    this.accounts().filter(a => a.NOA < 5).sort((a,b)=>a.NOA-b.NOA));
+    this.accounts().filter(a => (a.RTBA ?? 0) === 1 && (a.TYPEA ?? 0) === 0).sort((a,b)=>a.NOA-b.NOA));
   // NOA2: rtba=2 (optionally filtered by typea=:noa1)
   //   Matches:  listx ('CONT.noa2' ,â€¦ '  where  nvl(rtba,0)=2 and typea=â€™||:noa1||â€™ order by noa')
   readonly noa2Options = computed<Account[]>(() => {

@@ -377,6 +377,135 @@ tbody tr:hover td {
   color: #9f1239;
 }
 
+.account-lookup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.54);
+}
+
+.account-lookup-dialog {
+  width: min(820px, 96vw);
+  max-height: min(620px, 88vh);
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #8192a6;
+  background: #ffffff;
+  box-shadow: 0 18px 42px rgba(15, 23, 42, 0.28);
+}
+
+.account-lookup-head {
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: 1fr auto 34px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 10px;
+  border-bottom: 1px solid #c8ced6;
+  background: #e7edf4;
+}
+
+.account-lookup-head strong {
+  font-size: 15px;
+  color: #122033;
+}
+
+.account-lookup-head span {
+  font-size: 12px;
+  color: #596273;
+}
+
+.account-lookup-head button {
+  width: 28px;
+  height: 26px;
+  display: inline-grid;
+  place-items: center;
+  border: 1px solid #9aa7b8;
+  background: #f7f9fb;
+  color: #2f3947;
+  cursor: pointer;
+}
+
+.account-lookup-search {
+  position: relative;
+  padding: 10px;
+  border-bottom: 1px solid #d9dee5;
+  background: #f6f8fb;
+}
+
+.account-lookup-search i {
+  position: absolute;
+  top: 50%;
+  right: 20px;
+  transform: translateY(-50%);
+  color: #667085;
+}
+
+.account-lookup-search input {
+  height: 34px;
+  padding-right: 34px;
+}
+
+.account-lookup-body {
+  min-height: 240px;
+  overflow: auto;
+}
+
+.account-lookup-table {
+  width: 100%;
+  min-width: 640px;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.account-lookup-table th,
+.account-lookup-table td {
+  border-bottom: 1px solid #e4e7ec;
+  border-left: 1px solid #eef1f4;
+  padding: 8px 10px;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.account-lookup-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #eef2f6;
+}
+
+.account-lookup-table tbody tr {
+  cursor: pointer;
+}
+
+.account-lookup-table tbody tr:hover td,
+.account-lookup-table tbody tr.active td {
+  background: #e9f5f3;
+}
+
+.account-lookup-table .mono {
+  direction: ltr;
+  text-align: left;
+  font-family: Consolas, 'Courier New', monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+.account-lookup-message {
+  min-height: 220px;
+  display: grid;
+  place-items: center;
+  color: #667085;
+  font-size: 13px;
+}
+
+.account-lookup-message.error {
+  color: #9f1239;
+}
+
 @media (max-width: 1180px) {
   .filters-band {
     grid-template-columns: repeat(4, minmax(120px, 1fr));
@@ -436,7 +565,7 @@ tbody tr:hover td {
   .filters-band,
   .summary-strip,
   .notice-line,
-  app-lov-picker {
+  .account-lookup-backdrop {
     display: none !important;
   }
 

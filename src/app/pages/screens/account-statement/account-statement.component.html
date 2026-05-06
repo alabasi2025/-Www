@@ -206,12 +206,62 @@
     </footer>
   </main>
 
-  <app-lov-picker
-    [open]="lovOpen()"
-    [rtba]="5"
-    [limit]="60"
-    title="دليل الحسابات"
-    (select)="pickAccount($event)"
-    (close)="closeAccounts()"
-  />
+  @if (lovOpen()) {
+    <div class="account-lookup-backdrop" (click)="closeAccounts()" (keydown.escape)="closeAccounts()" tabindex="-1">
+      <section class="account-lookup-dialog" role="dialog" aria-modal="true" aria-label="دليل الحسابات" (click)="$event.stopPropagation()">
+        <header class="account-lookup-head">
+          <strong>دليل الحسابات</strong>
+          <span>{{ accountRows().length | number:'1.0-0' }} نتيجة</span>
+          <button type="button" aria-label="إغلاق" title="إغلاق" (click)="closeAccounts()">
+            <i class="pi pi-times"></i>
+          </button>
+        </header>
+
+        <div class="account-lookup-search">
+          <i class="pi pi-search"></i>
+          <input
+            #accountLookupInput
+            type="text"
+            [value]="accountSearchQuery()"
+            (input)="searchAccounts(accountLookupInput.value)"
+            placeholder="ابحث برقم الحساب أو الاسم أو الاختصار"
+            autofocus />
+        </div>
+
+        <div class="account-lookup-body">
+          @if (accountLookupLoading()) {
+            <div class="account-lookup-message">
+              <i class="pi pi-spin pi-spinner"></i>
+              جاري تحميل الحسابات...
+            </div>
+          } @else if (accountLookupError()) {
+            <div class="account-lookup-message error">{{ accountLookupError() }}</div>
+          } @else if (!accountRows().length) {
+            <div class="account-lookup-message">لا توجد حسابات مطابقة</div>
+          } @else {
+            <table class="account-lookup-table">
+              <thead>
+                <tr>
+                  <th>رقم الحساب</th>
+                  <th>اسم الحساب</th>
+                  <th>العملة</th>
+                  <th>اختصار</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of accountRows(); track item.NOA) {
+                  <tr (click)="pickAccount(item)" (dblclick)="pickAccount(item)" [class.active]="item.NOA === account().NOA">
+                    <td class="mono">{{ item.NOA }}</td>
+                    <td>{{ item.NAMEA }}</td>
+                    <td>{{ item.NOAML === 1 ? 'يمني' : ('#' + item.NOAML) }}</td>
+                    <td>{{ item.AHSAR || '' }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </section>
+    </div>
+  }
 </div>
